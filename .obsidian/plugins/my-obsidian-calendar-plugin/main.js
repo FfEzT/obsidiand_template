@@ -14633,13 +14633,15 @@ __export(main_exports, {
   default: () => MyPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 
-// src/CalendarView.ts
+// src/views/CalendarView.ts
 var import_obsidian = require("obsidian");
 
 // src/constants.ts
 var MSG_PLG_NAME = "MyCalendar";
+var EVENT_SRC = "databases";
+var PLACE_FOR_CREATING_NOTE = "databases";
 var daysOfWeek = ["1", "2", "3", "4", "5", "6", "0"];
 var display = "background";
 var COLOUR_REST = "#305B60";
@@ -14687,24 +14689,25 @@ var DEFAULT_SETTINGS = {
         color: COLOUR_REST
       }
     ]
+  },
+  source: {
+    noteSources: [{
+      path: EVENT_SRC,
+      excludes: []
+    }],
+    // NOTE default path where note will be created
+    defaultCreatePath: PLACE_FOR_CREATING_NOTE
   }
 };
+var VIEW_TYPE = "my-obsidian-calendar-plugin";
 var TEXT_DONE = "\u{1F7E2}done";
 var TEXT_IN_PROGRESS = "\u{1F535}in progress";
 var TEXT_SOON = "\u{1F7E3}soon";
 var TEXT_CHILD_IN_PROGRESS = "\u{1F7E1}\u{1F7E6}child in progress";
 var TEXT_BLOCKED = "\u{1F7E1}blocked";
-var EVENT_SRC = "databases";
-var PLACE_FOR_CREATING_NOTE = "databases";
-var FORMAT_DEFAULT_ADD = "x";
 var FORMAT_DAY = "d";
 var FORMAT_HOUR = "h";
 var FORMAT_MINUTE = "m";
-var DEFAULT_ADD = {
-  d: 0,
-  h: 1,
-  m: 30
-};
 var BACKGROUND_COLOUR = {
   hue: {
     shift: 0,
@@ -14729,7 +14732,6 @@ var HoursInDay = 24;
 var MillisecsInMinute = MillisecsInSecond * SecsInMinute;
 var MillisecsInHour = MillisecsInMinute * MinutesInHour;
 var MillisecsInDay = MillisecsInHour * HoursInDay;
-var DEFAULT_ADD_IN_MILLISEC = DEFAULT_ADD.d * MillisecsInDay + DEFAULT_ADD.h * MillisecsInHour + DEFAULT_ADD.m * MillisecsInMinute;
 
 // src/util.ts
 var import_obsidian_dataview = __toESM(require_lib());
@@ -14744,25 +14746,15 @@ function pathToFileWithoutFileName(path) {
 function IDateToCalendarEvent(args) {
   var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
   const structure = {
-    start: new Date(args.date),
+    start: new Date(args.ff_date),
     allDay: false
   };
-  if (args.duration) {
-    structure.start.setHours(((_b = (_a = args.timeStart) == null ? void 0 : _a.values) == null ? void 0 : _b.hours) || 0);
-    structure.start.setMinutes(((_d = (_c = args.timeStart) == null ? void 0 : _c.values) == null ? void 0 : _d.minutes) || 0);
+  if (args.ff_duration) {
+    structure.start.setHours(((_b = (_a = args.ff_timeStart) == null ? void 0 : _a.values) == null ? void 0 : _b.hours) || 0);
+    structure.start.setMinutes(((_d = (_c = args.ff_timeStart) == null ? void 0 : _c.values) == null ? void 0 : _d.minutes) || 0);
     let tmpTime = new Date(structure.start);
-    if (args.duration === FORMAT_DEFAULT_ADD) {
-      tmpTime.setMinutes(
-        tmpTime.getMinutes() + DEFAULT_ADD.m
-      );
-      tmpTime.setHours(
-        tmpTime.getHours() + DEFAULT_ADD.h
-      );
-      tmpTime.setDate(
-        tmpTime.getDate() + DEFAULT_ADD.d
-      );
-    } else if (((_f = (_e = args.duration) == null ? void 0 : _e.values) == null ? void 0 : _f.minutes) || ((_h = (_g = args.duration) == null ? void 0 : _g.values) == null ? void 0 : _h.hours) || ((_j = (_i = args.duration) == null ? void 0 : _i.values) == null ? void 0 : _j.days)) {
-      const duration = args.duration.values;
+    if (((_f = (_e = args.ff_duration) == null ? void 0 : _e.values) == null ? void 0 : _f.minutes) || ((_h = (_g = args.ff_duration) == null ? void 0 : _g.values) == null ? void 0 : _h.hours) || ((_j = (_i = args.ff_duration) == null ? void 0 : _i.values) == null ? void 0 : _j.days)) {
+      const duration = args.ff_duration.values;
       tmpTime.setMinutes(
         tmpTime.getMinutes() + (duration.minutes || 0)
       );
@@ -14775,10 +14767,10 @@ function IDateToCalendarEvent(args) {
     } else {
       structure.allDay = true;
     }
-    if (!((_k = args.timeStart) == null ? void 0 : _k.values))
+    if (!((_k = args.ff_timeStart) == null ? void 0 : _k.values))
       structure.allDay = true;
     structure.end = tmpTime;
-  } else if (args.duration) {
+  } else if (args.ff_duration) {
     structure.allDay = true;
   } else
     structure.allDay = true;
@@ -14790,21 +14782,21 @@ function CalendarEventToIDate(event) {
     start.getMinutes() - start.getTimezoneOffset()
   );
   const result = {
-    duration: "",
-    timeStart: "",
-    date: new Date(start)
+    ff_duration: "",
+    ff_timeStart: "",
+    ff_date: new Date(start)
   };
   start.setMinutes(
     start.getMinutes() + start.getTimezoneOffset()
   );
   let srcMillisec = end ? end - start : MillisecsInHour;
   if (allDay) {
-    result["timeStart"] = "";
+    result["ff_timeStart"] = "";
     if (srcMillisec <= MillisecsInDay)
       srcMillisec = 0;
   } else
-    result["timeStart"] = start.getHours() + "h" + start.getMinutes() + "m";
-  result["duration"] = DEFAULT_ADD_IN_MILLISEC === srcMillisec ? FORMAT_DEFAULT_ADD : millisecToString(srcMillisec);
+    result["ff_timeStart"] = start.getHours() + "h" + start.getMinutes() + "m";
+  result["ff_duration"] = millisecToString(srcMillisec);
   return result;
 }
 function getTicksFromText(text) {
@@ -14818,14 +14810,14 @@ function getTicksFromText(text) {
       if (!args)
         continue;
       const name = (_a = args[0]) == null ? void 0 : _a.trim();
-      const date = dv.date((_b = args[1]) == null ? void 0 : _b.trim());
-      const timeStart = dv.duration((_c = args[2]) == null ? void 0 : _c.trim());
+      const ff_date = dv.date((_b = args[1]) == null ? void 0 : _b.trim());
+      const ff_timeStart = dv.duration((_c = args[2]) == null ? void 0 : _c.trim());
       const tempDuration = (_d = args[3]) == null ? void 0 : _d.trim();
-      const duration = tempDuration == "x" ? "x" : dv.duration((_e = args[3]) == null ? void 0 : _e.trim());
+      const ff_duration = tempDuration == "x" ? "x" : dv.duration((_e = args[3]) == null ? void 0 : _e.trim());
       if (name == "")
         continue;
       result.push(
-        { name, date, timeStart, duration }
+        { name, ff_date, ff_timeStart, ff_duration }
       );
     }
   return result;
@@ -14916,17 +14908,17 @@ async function waitDvInit() {
   while (!dv.index.initialized)
     await sleep(SLEEP_TIME);
 }
-async function getNotesWithoutParent(src) {
+async function getNotesWithoutParent(src_) {
   await waitDvInit();
-  const child = dv.pages(`"${src}"`).where(
-    (page) => !page.parent
+  let src = src_.slice(0, src_.length-1)
+  const folder = '"' + src + '"'
+  const child = dv.pages(folder).where(
+    (page) => !page.ff_parent
   ).array();
   return child;
 }
-async function getProgress(plg, page) {
+async function getProgress(cache, noteManager, page) {
   const result = { done: 0, all: 0 };
-  const cache = plg.cache;
-  const fileManager = plg.fileManager;
   await waitDvInit();
   const pages = /* @__PURE__ */ new Set();
   const stack = [page.file.path];
@@ -14936,13 +14928,13 @@ async function getProgress(plg, page) {
     const meta = dv.page(path);
     if (!page2 || !meta)
       continue;
-    const tasks = fileManager.getTaskCount(page2);
+    const tasks = noteManager.getTaskCount(page2);
     result.all += tasks.all;
     result.done += tasks.done;
     const inlinks = meta.file.inlinks.array();
-    if (page2.status) {
+    if (page2.ff_status) {
       ++result.all;
-      if (page2.status == TEXT_DONE)
+      if (page2.ff_status == TEXT_DONE)
         ++result.done;
     }
     for (let inlink of inlinks) {
@@ -14977,6 +14969,12 @@ async function getParentNote(page) {
 function safeParseInt(str) {
   const num = Number(str);
   return Number.isInteger(num) ? num : NaN;
+}
+function timeAdd(start, duration) {
+  const dur = duration.as("minutes");
+  const result = new Date(start);
+  result.setMinutes(result.getMinutes() + dur);
+  return result;
 }
 
 // node_modules/@fullcalendar/core/node_modules/preact/dist/preact.module.js
@@ -31857,15 +31855,21 @@ function renderCalendar(containerEl, eventSources, settings) {
   return cal;
 }
 
-// src/CalendarView.ts
-var VIEW_TYPE = "my-obsidian-calendar-plugin";
+// src/views/CalendarView.ts
 var CalendarView = class extends import_obsidian.ItemView {
-  constructor(leaf, idForCache, event_src, parrentPointer) {
+  constructor(leaf, idForCache, eventSrc, calendarSettings, cache, noteManager, placeForCreatingNote) {
     super(leaf);
     this.calendar = null;
-    this.parrentPointer = parrentPointer;
+    this.selectedSrcPaths = /* @__PURE__ */ new Set();
+    this.cache = cache;
     this.idForCache = idForCache;
-    this.event_src = event_src;
+    this.eventSrc = eventSrc;
+    this.noteManager = noteManager;
+    this.calendarSettings = calendarSettings;
+    this.placeForCreatingNote = placeForCreatingNote;
+    for (let src of eventSrc) {
+      this.selectedSrcPaths.add(src.path);
+    }
   }
   getViewType() {
     return VIEW_TYPE;
@@ -31873,21 +31877,31 @@ var CalendarView = class extends import_obsidian.ItemView {
   getDisplayText() {
     return "Calendar";
   }
-  // #1
   async onOpen() {
     if (import_obsidian.Platform.isMobile)
       this.containerEl.style.height = "95vh";
-    const container = this.containerEl.children[1];
+    const { containerEl } = this;
+    const container = containerEl.children[1];
     container.empty();
-    this.render(container);
+    const calendarContainer = container.createDiv(
+      /*{cls: 'class'}*/
+    );
+    const checkBoxContainer = container.createDiv({ cls: "calendar-src-checkboxes" });
+    this.render(calendarContainer).then(
+      () => this.renderSrcCheckboxes(checkBoxContainer)
+    );
   }
   onResize() {
     var _a;
     (_a = this.calendar) == null ? void 0 : _a.render();
   }
-  addFile(page) {
+  addFile(data) {
     var _a;
-    const events = this.pageToEvents(page);
+    this.localStorage.push(data);
+    if (!this.isPathInActiveSrc(data.file.path)) {
+      return;
+    }
+    const events = this.pageToEvents(data);
     for (let event of events)
       (_a = this.calendar) == null ? void 0 : _a.addEvent(event);
   }
@@ -31903,7 +31917,14 @@ var CalendarView = class extends import_obsidian.ItemView {
   }
   deleteFile(page) {
     var _a, _b;
+    const el = this.localStorage.find(
+      (value) => page.file.path == value.file.path
+    );
+    if (el)
+      this.localStorage.remove(el);
     if (!this.calendar)
+      return;
+    if (!this.isPathInActiveSrc(page.file.path))
       return;
     (_a = this.calendar.getEventById(page.file.path)) == null ? void 0 : _a.remove();
     for (let tick of page.ticks) {
@@ -31921,22 +31942,116 @@ var CalendarView = class extends import_obsidian.ItemView {
       return;
     this.calendar.destroy();
     this.calendar = null;
-    this.parrentPointer.cache.unsubscribe(this.idForCache);
+    this.cache.unsubscribe(this.idForCache);
+  }
+  pageToEvents(page) {
+    const result = [];
+    const colours = this.calendarSettings.colours;
+    const structureTemplate = {
+      id: "",
+      title: "",
+      borderColor: colours.default,
+      color: getColourFromPath(page.file.path),
+      editable: true
+    };
+    if (page.ff_date) {
+      const structure = {
+        ...structureTemplate,
+        id: page.file.path,
+        title: page.file.name,
+        ...IDateToCalendarEvent(page)
+      };
+      if (page.ff_frequency)
+        structure.borderColor = colours.frequency;
+      if (page.ff_status == TEXT_DONE)
+        structure.borderColor = colours.done;
+      result.push(structure);
+    }
+    for (let tick of page.ticks) {
+      const structure = {
+        ...structureTemplate,
+        id: templateIDTick(page.file.path, tick.name),
+        title: templateNameTick(page.file.name, tick.name),
+        borderColor: colours.tick,
+        extendedProps: {
+          tickName: tick.name,
+          notePath: page.file.path
+        },
+        ...IDateToCalendarEvent(tick)
+      };
+      result.push(structure);
+    }
+    return result;
+  }
+  renderSrcCheckboxes(srcCheckboxContainer) {
+    srcCheckboxContainer.empty();
+    srcCheckboxContainer.addClass("calendar-src-checkboxes");
+    for (let src of this.eventSrc) {
+      const checkboxContainer = srcCheckboxContainer.createDiv({ cls: "src-checkbox-item" });
+      const checkbox = checkboxContainer.createEl("input", {
+        type: "checkbox",
+        attr: {
+          id: `src-checkbox-${src.path}`,
+          checked: this.selectedSrcPaths.has(src.path) ? "checked" : null
+        }
+      });
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
+          this.selectedSrcPaths.add(src.path);
+        } else {
+          this.selectedSrcPaths.delete(src.path);
+        }
+        this.refreshCalendar();
+      });
+      checkboxContainer.createEl("label", {
+        text: src.path,
+        attr: { for: `src-checkbox-${src.path}` }
+      });
+    }
+  }
+  isPathInActiveSrc(pagePath) {
+    const eventSrc = this.eventSrc.filter(
+      (el) => this.selectedSrcPaths.has(el.path)
+    );
+    return eventSrc.some(
+      (src) => src.isIn(pagePath)
+    );
+  }
+  refreshCalendar() {
+    if (!this.calendar)
+      return;
+    this.calendar.pauseRendering();
+    this.calendar.removeAllEvents();
+    const events = [...this.calendarSettings.restTime];
+    for (let page of this.localStorage) {
+      if (!this.isPathInActiveSrc(page.file.path))
+        continue;
+      events.push(...this.pageToEvents(page));
+    }
+    for (let event of events) {
+      this.calendar.addEvent(event);
+    }
+    this.calendar.resumeRendering();
   }
   async render(container) {
+    const subscribedData = await this.cache.subscribe(this.idForCache, this.eventSrc, this);
+    this.localStorage = subscribedData;
     const events = [];
-    for (let page of await this.parrentPointer.cache.subscribe(this.idForCache, this.event_src, this)) {
+    for (const page of subscribedData) {
+      if (!this.isPathInActiveSrc(page.file.path))
+        continue;
       events.push(...this.pageToEvents(page));
     }
     this.calendar = renderCalendar(
       container,
       {
-        // @ts-ignore
+        //@ts-ignore // TODO remove
         events: [
-          ...this.parrentPointer.getSettings().calendar.restTime,
+          ...this.calendarSettings.restTime,
           ...events
         ]
       },
+      // as EventSource,
       this.getSettingsCalendar()
     );
     this.calendar.setOption("weekNumbers", true);
@@ -31957,21 +32072,62 @@ var CalendarView = class extends import_obsidian.ItemView {
       firstDay: 1,
       weekNumbers: true,
       timeFormat24h: true,
+      // TODO remove any
       eventClick: (arg) => {
         const { event, jsEvent } = arg;
-        this.parrentPointer.fileManager.openNote(event);
+        this.noteManager.openNote(event);
       },
+      // TODO remove any
       modifyEvent: async (newPos, oldPos) => {
+        var _a, _b;
         const props = newPos.extendedProps;
         const event = {
           start: newPos.start,
           end: newPos.end,
           allDay: newPos.allDay
         };
-        if (props.notePath)
-          this.parrentPointer.fileManager.changeTickFile(props.notePath, props.tickName, event);
-        else
-          this.parrentPointer.fileManager.changePropertyFile(newPos.id, event);
+        if (props.notePath) {
+          const page = this.cache.getPage(props.notePath);
+          if (!page) {
+            console.warn(`${MSG_PLG_NAME}: can't find page by Event. eventID: ${props.notePath}`);
+            return false;
+          }
+          const tick = page.ticks.find(
+            (el) => el.name == props.tickName
+          );
+          if (!tick) {
+            console.warn(`${MSG_PLG_NAME}: can't find tick by page. Page - tickName: ${props.notePath} - ${props.tickName}`);
+            return false;
+          }
+          if (tick.ff_duration && oldPos.allDay && !newPos.allDay) {
+            event.end = timeAdd(newPos.start, tick.ff_duration);
+            newPos.setEnd(event.end);
+          }
+          const newProp = CalendarEventToIDate(event);
+          if (newPos.allDay) {
+            newProp["ff_duration"] = millisecToString(
+              (_a = tick.ff_duration) == null ? void 0 : _a.as("milliseconds")
+            );
+          }
+          this.noteManager.changeTickFile(props.notePath, props.tickName, newProp);
+        } else {
+          const page = this.cache.getPage(newPos.id);
+          if (!page) {
+            console.warn(`${MSG_PLG_NAME}: can't find page by Event. eventID: ${newPos.id}`);
+            return false;
+          }
+          if (page.ff_duration && oldPos.allDay && !newPos.allDay) {
+            event.end = timeAdd(newPos.start, page.ff_duration);
+            newPos.setEnd(event.end);
+          }
+          const newProp = CalendarEventToIDate(event);
+          if (newPos.allDay) {
+            newProp["ff_duration"] = millisecToString(
+              (_b = page.ff_duration) == null ? void 0 : _b.as("milliseconds")
+            );
+          }
+          this.noteManager.changePropertyFile(newPos.id, newProp);
+        }
         return true;
       },
       select: (start, end, allDay, __viewMode) => {
@@ -31981,10 +32137,13 @@ var CalendarView = class extends import_obsidian.ItemView {
             try {
               if (!nameOfFile)
                 throw 1;
-              const pathOfFile = PLACE_FOR_CREATING_NOTE + `/${nameOfFile}.md`;
-              await this.parrentPointer.fileManager.createFile(pathOfFile);
+              const pathOfFile = this.placeForCreatingNote + `/${nameOfFile}.md`;
+              await this.noteManager.createFile(pathOfFile);
               setTimeout(
-                () => this.parrentPointer.fileManager.changePropertyFile(pathOfFile, { start, end, allDay }),
+                () => this.noteManager.changePropertyFile(
+                  pathOfFile,
+                  CalendarEventToIDate({ start, end, allDay })
+                ),
                 1500
               );
             } catch (e3) {
@@ -31997,7 +32156,7 @@ var CalendarView = class extends import_obsidian.ItemView {
       openContextMenuForEvent: (e3, mouseEvent) => {
         this.contextMenuForEvent(e3, mouseEvent);
       },
-      slotDuration: this.parrentPointer.getSettings().calendar.slotDuration
+      slotDuration: this.calendarSettings.slotDuration
     };
     if (import_obsidian.Platform.isMobile) {
       result.eventClick = (arg) => {
@@ -32012,48 +32171,9 @@ var CalendarView = class extends import_obsidian.ItemView {
   contextMenuForEvent(event, mouseEvent) {
     const menu = new import_obsidian.Menu();
     menu.addItem(
-      (item) => item.setTitle(event.id).onClick(async () => this.parrentPointer.fileManager.openNote(event))
+      (item) => item.setTitle(event.id).onClick(async () => this.noteManager.openNote(event))
     );
     menu.showAtMouseEvent(mouseEvent);
-  }
-  pageToEvents(page) {
-    const result = [];
-    const colours = this.parrentPointer.getSettings().calendar.colours;
-    const structureTemplate = {
-      id: "",
-      title: "",
-      borderColor: colours.default,
-      color: getColourFromPath(page.file.path),
-      editable: true
-    };
-    if (page.date) {
-      const structure = {
-        ...structureTemplate,
-        id: page.file.path,
-        title: page.file.name,
-        ...IDateToCalendarEvent(page)
-      };
-      if (page.frequency)
-        structure.borderColor = colours.frequency;
-      if (page.status == TEXT_DONE)
-        structure.borderColor = colours.done;
-      result.push(structure);
-    }
-    for (let tick of page.ticks) {
-      const structure = {
-        ...structureTemplate,
-        id: templateIDTick(page.file.path, tick.name),
-        title: templateNameTick(page.file.name, tick.name),
-        borderColor: colours.tick,
-        extendedProps: {
-          tickName: tick.name,
-          notePath: page.file.path
-        },
-        ...IDateToCalendarEvent(tick)
-      };
-      result.push(structure);
-    }
-    return result;
   }
 };
 var nameModal = class extends import_obsidian.Modal {
@@ -32082,17 +32202,22 @@ var nameModal = class extends import_obsidian.Modal {
 // src/cache.ts
 var import_obsidian2 = require("obsidian");
 var Cache2 = class {
-  // TODO fix: fileManager is unused since it can be found in MyPlugin
-  // but first off, init FileManager, then Cache
-  constructor(parrentPointer, fileManager) {
+  constructor(noteManager, vault) {
     this.storage = /* @__PURE__ */ new Map();
     this.subscribers = /* @__PURE__ */ new Map();
     this.initSync = new Promise(
       (resolve) => this.initSyncResolve = resolve
     );
     this.isInited = false;
-    this.parrentPointer = parrentPointer;
-    this.parrentPointer.app.workspace.onLayoutReady(() => this.initStorage());
+    this.noteManager = noteManager;
+    this.vault = vault;
+  }
+  async init() {
+    if (this.isInited)
+      return;
+    await this.initStorage();
+    this.initSyncResolve();
+    this.isInited = true;
   }
   getPage(path) {
     return this.storage.get(path);
@@ -32113,9 +32238,13 @@ var Cache2 = class {
       await this.initSync;
     const result = [];
     for (let [key, value] of this.storage) {
-      for (let path of paths) {
-        if (key.startsWith(path))
-          result.push(value);
+      const isOk = paths.some(
+        (el) => {
+          return el.isIn(key);
+        }
+      );
+      if (isOk) {
+        result.push(value);
       }
     }
     return result;
@@ -32123,7 +32252,7 @@ var Cache2 = class {
   unsubscribe(id) {
     this.subscribers.delete(id);
   }
-  renameFile(file, oldPath) {
+  async renameFile(file, oldPath) {
     if (!this.isInited)
       return;
     const oldPage = this.storage.get(oldPath);
@@ -32134,56 +32263,50 @@ var Cache2 = class {
     this.storage.delete(oldPath);
     this.storage.set(file.path, page);
     for (let [_3, { paths, subscriber }] of this.subscribers) {
-      for (let path of paths) {
-        if (file.path.startsWith(path) && oldPath.startsWith(path))
-          subscriber.renameFile(page, oldPage);
-        else if (oldPath.startsWith(path))
-          subscriber.deleteFile(oldPage);
-        else if (file.path.startsWith(path))
-          subscriber.addFile(page);
-      }
+      const isOk1 = paths.some((el) => el.isIn(file.path));
+      const isOk2 = paths.some((el) => el.isIn(oldPath));
+      if (isOk1 && isOk2)
+        subscriber.renameFile(page, oldPage);
+      else if (isOk2)
+        subscriber.deleteFile(oldPage);
+      else if (isOk1)
+        subscriber.addFile(page);
     }
   }
   async addFile(file) {
     if (!this.isInited)
       return;
-    const page = await this.parrentPointer.fileManager.getPage(file);
+    const page = await this.noteManager.getPage(file);
     this.storage.set(file.path, page);
     for (let [_3, { paths, subscriber }] of this.subscribers) {
-      for (let path of paths) {
-        if (!file.path.startsWith(path))
-          continue;
+      const isOk = paths.some((el) => el.isIn(file.path));
+      if (isOk)
         subscriber.addFile(page);
-      }
     }
   }
   async changeFile(file) {
     if (!this.isInited)
       return;
-    const page = await this.parrentPointer.fileManager.getPage(file);
+    const page = await this.noteManager.getPage(file);
     const oldPage = this.storage.get(file.path);
     if (isEqualObj(page, oldPage))
       return;
     this.storage.set(file.path, page);
     for (let [_3, { paths, subscriber }] of this.subscribers) {
-      for (let path of paths) {
-        if (!file.path.startsWith(path))
-          continue;
+      const isOk = paths.some((el) => el.isIn(file.path));
+      if (isOk)
         subscriber.changeFile(page, oldPage);
-      }
     }
   }
-  deleteFile(file) {
+  async deleteFile(file) {
     if (!this.isInited)
       return;
     const page = this.storage.get(file.path);
     this.storage.delete(file.path);
     for (let [_3, { paths, subscriber }] of this.subscribers) {
-      for (let path of paths) {
-        if (!file.path.startsWith(path))
-          continue;
+      const isOk = paths.some((el) => el.isIn(file.path));
+      if (isOk)
         subscriber.deleteFile(page);
-      }
     }
   }
   async reset() {
@@ -32191,12 +32314,12 @@ var Cache2 = class {
     this.storage.clear();
     const tmp = this.subscribers;
     this.subscribers = /* @__PURE__ */ new Map();
-    await this.initStorage();
+    await this.init();
     for (let [_3, { subscriber }] of tmp)
       subscriber.reset();
   }
   async initStorage() {
-    const tFiles = this.parrentPointer.app.vault.getMarkdownFiles();
+    const tFiles = this.vault.getMarkdownFiles();
     const notice = new import_obsidian2.Notice(
       `${MSG_PLG_NAME}: there are ${tFiles.length} notes`,
       1e3 * 60
@@ -32207,24 +32330,75 @@ var Cache2 = class {
       notice.setMessage(`${MSG_PLG_NAME}: (${i3}/${tFiles.length}) added ${tFile.path}`);
       this.storage.set(
         tFile.path,
-        await this.parrentPointer.fileManager.getPage(tFile)
+        await this.noteManager.getPage(tFile)
       );
     }
     notice.hide();
     new import_obsidian2.Notice(`${MSG_PLG_NAME}: cache has been inited`);
-    this.initSyncResolve();
-    this.isInited = true;
+  }
+};
+
+// src/types.ts
+var Src = class {
+  constructor(path) {
+    this._path = path;
+    this._excludes = [];
+  }
+  static fromSrcJson(src) {
+    const result = new Src(src.path);
+    if (result.addExcludes(src.excludes))
+      return result;
+    return null;
+  }
+  toSrcJson() {
+    return {
+      path: this._path,
+      excludes: [...this._excludes]
+    };
+  }
+  addExcludes(excludes) {
+    const isOk = excludes.every(
+      (exclude) => {
+        if (!exclude.startsWith(this._path))
+          return false;
+        if (exclude !== this._path)
+          return false;
+        return true;
+      }
+    );
+    if (!isOk)
+      return false;
+    this._excludes.push(...excludes);
+    this._excludes = this._excludes.unique();
+    return true;
+  }
+  isIn(path) {
+    if (!path.startsWith(this._path)) {
+      return false;
+    }
+    if (!this._excludes.length)
+      return true;
+    return this._excludes.some(
+      (exclude) => path.startsWith(exclude)
+    );
+  }
+  get path() {
+    return this._path;
+  }
+  get excludes() {
+    return structuredClone(this._excludes);
   }
 };
 
 // src/setting.ts
 var import_obsidian3 = require("obsidian");
 var MySettingTab = class extends import_obsidian3.PluginSettingTab {
-  constructor(app, plugin) {
+  constructor(app, plugin, vaultOps) {
     super(app, plugin);
     this.plugin = plugin;
+    this.vaultOps = vaultOps;
   }
-  display() {
+  async display() {
     let { containerEl } = this;
     containerEl.empty();
     const settings = this.plugin.getSettings();
@@ -32239,6 +32413,75 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
         );
       }
     );
+    new import_obsidian3.Setting(containerEl).setHeading();
+    new import_obsidian3.Setting(containerEl).setName("Event Sources").setHeading().setDesc("Folders to search for event notes");
+    for (let index_ in settings.source.noteSources) {
+      const index8 = Number(index_);
+      const src = settings.source.noteSources[index8];
+      new import_obsidian3.Setting(containerEl).setName(`Source folder ${index8 + 1}`).addText(async (text) => {
+        var _a;
+        const src2 = settings.source.noteSources[index8];
+        const folders = await this.vaultOps.getFoldersInVault();
+        text.setPlaceholder("Enter folder path").setValue(src2.path).onChange(async (value) => {
+          if (!folders.contains(value))
+            return;
+          const newSrc = new Src(value);
+          if (src2.excludes && src2.excludes.length > 0) {
+            newSrc.addExcludes(src2.excludes);
+          }
+          settings.source.noteSources[index8] = newSrc.toSrcJson();
+          await this.plugin.saveSettings(settings);
+        });
+        const dataList = document.createElement("datalist");
+        dataList.id = `folder-suggestions-${index8}`;
+        const allFolders = Array.from(folders);
+        for (let folder of allFolders) {
+          const option = document.createElement("option");
+          option.value = folder;
+          dataList.appendChild(option);
+        }
+        text.inputEl.setAttribute("list", `folder-suggestions-${index8}`);
+        (_a = text.inputEl.parentElement) == null ? void 0 : _a.appendChild(dataList);
+      }).addExtraButton((button) => {
+        button.setIcon("trash").setTooltip("Remove this folder").onClick(() => {
+          if (settings.source.noteSources.length > 1) {
+            settings.source.noteSources.splice(index8, 1);
+            this.plugin.saveSettings(settings);
+            this.display();
+          } else {
+            new import_obsidian3.Notice("Cannot remove the last folder");
+          }
+        });
+      });
+    }
+    new import_obsidian3.Setting(containerEl).setName("Add new folder").setDesc("Add another folder to search for events").addButton(
+      (button) => button.setButtonText("Add Folder").setCta().onClick(() => {
+        settings.source.noteSources.push(new Src("").toSrcJson());
+        this.plugin.saveSettings(settings);
+        this.display();
+      })
+    );
+    new import_obsidian3.Setting(containerEl).setName("Default create path").setDesc("Default path where new notes will be created").addText(async (text) => {
+      var _a;
+      const folders = await this.vaultOps.getFoldersInVault();
+      text.setPlaceholder("Enter folder path").setValue(settings.source.defaultCreatePath || "").onChange(async (value) => {
+        if (!folders.contains(value)) {
+          return;
+        }
+        settings.source.defaultCreatePath = value;
+        await this.plugin.saveSettings(settings);
+      });
+      const dataList = document.createElement("datalist");
+      dataList.id = `default-path-suggestions`;
+      const allFolders = Array.from(folders);
+      for (let folder of allFolders) {
+        const option = document.createElement("option");
+        option.value = folder;
+        dataList.appendChild(option);
+      }
+      text.inputEl.setAttribute("list", `default-path-suggestions`);
+      (_a = text.inputEl.parentElement) == null ? void 0 : _a.appendChild(dataList);
+    });
     new import_obsidian3.Setting(containerEl).setHeading();
     new import_obsidian3.Setting(containerEl).setName("Calendar").setHeading();
     new import_obsidian3.Setting(containerEl).setName("Slot duration").setDesc(`Default: ${DEFAULT_SETTINGS.calendar.slotDuration}`).addText(
@@ -32327,30 +32570,30 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
   }
 };
 
-// src/statusCorrector.ts
+// src/views/statusCorrector.ts
 var import_obsidian4 = require("obsidian");
 var StatusCorrector = class {
-  constructor(idForCache, event_src, parrentPointer) {
+  constructor(idForCache, eventSrc, cache, noteManager) {
     this.subscribed = false;
     this.whileSubscribing = new Promise(
       (resolve) => this.resolveSubscribing = resolve
     );
-    this.parent = parrentPointer;
+    this.cache = cache;
     this.idForCache = idForCache;
-    this.event_src = event_src;
-    this.parent.cache.subscribe(this.idForCache, this.event_src, this).then(
-      () => {
-        this.subscribed = true;
-        this.resolveSubscribing();
-      }
-    );
+    this.eventSrc = eventSrc;
+    this.noteManager = noteManager;
+  }
+  async init() {
+    await this.cache.subscribe(this.idForCache, this.eventSrc, this);
+    this.subscribed = true;
+    this.resolveSubscribing();
   }
   async correctNote(page) {
-    let status = page.status;
+    let status = page.ff_status;
     if (!status)
       return false;
     checkProgress: {
-      const tasks = await getProgress(this.parent, page);
+      const tasks = await getProgress(this.cache, this.noteManager, page);
       if (status == TEXT_DONE && tasks.all != tasks.done) {
         status = TEXT_IN_PROGRESS;
       } else if (status == TEXT_SOON && tasks.done != 0) {
@@ -32361,7 +32604,7 @@ var StatusCorrector = class {
     }
     checkDate: {
       const checks = [TEXT_SOON, TEXT_BLOCKED, TEXT_CHILD_IN_PROGRESS];
-      if (page.date && checks.indexOf(status) != -1) {
+      if (page.ff_date && checks.indexOf(status) != -1) {
         status = TEXT_IN_PROGRESS;
       }
     }
@@ -32369,10 +32612,10 @@ var StatusCorrector = class {
       const child_ = await getChildNotePaths(page.file.path);
       const statuses = new Array();
       for (let children_ of child_) {
-        const children = this.parent.cache.getPage(children_);
-        if (!(children == null ? void 0 : children.status))
+        const children = this.cache.getPage(children_);
+        if (!(children == null ? void 0 : children.ff_status))
           continue;
-        statuses.push(children.status);
+        statuses.push(children.ff_status);
       }
       switch (status) {
         case TEXT_SOON: {
@@ -32416,10 +32659,10 @@ var StatusCorrector = class {
         }
       }
     }
-    if (status == page.status)
+    if (status == page.ff_status)
       return false;
-    page.status = status;
-    await this.parent.fileManager.changeStatusFile(page.file.path, status);
+    page.ff_status = status;
+    await this.noteManager.changeStatusFile(page.file.path, status);
     return true;
   }
   async correctAllNotes() {
@@ -32433,7 +32676,20 @@ var StatusCorrector = class {
     }
     const queuePaths = [];
     const set = /* @__PURE__ */ new Set();
-    const parents = await getNotesWithoutParent(EVENT_SRC);
+    const computes = [];
+    for (let el of this.eventSrc) {
+      computes.push(
+        getNotesWithoutParent(el.path)
+      );
+    }
+    let parents_ = await Promise.all(computes);
+    let parents = [];
+    for (let el of parents_) {
+      parents.push(...el);
+    }
+    parents = parents.unique().filter(
+      (el) => this.eventSrc.some((src) => src.isIn(el.file.path))
+    );
     for (let parent of parents) {
       queuePaths.push(parent.file.path);
       set.add(parent.file.path);
@@ -32452,7 +32708,7 @@ var StatusCorrector = class {
       let i3 = queuePaths.length - pointer - 1;
       notice.setMessage(`${MSG_PLG_NAME}(status) ${i3}/${queuePaths.length}`);
       await this.correctNote(
-        this.parent.cache.getPage(
+        this.cache.getPage(
           queuePaths[pointer]
         )
       );
@@ -32465,7 +32721,7 @@ var StatusCorrector = class {
     new import_obsidian4.Notice(`${MSG_PLG_NAME}: Notes has been checked`);
   }
   destroy() {
-    this.parent.cache.unsubscribe(this.idForCache);
+    this.cache.unsubscribe(this.idForCache);
   }
   renameFile(newPage, oldPage) {
   }
@@ -32483,13 +32739,13 @@ var StatusCorrector = class {
     set.add(page.file.path);
     for (let leftPointer = 0; leftPointer < queuePaths.length; ++leftPointer) {
       const path = queuePaths[leftPointer];
-      const page2 = this.parent.cache.getPage(path);
-      const oldStatus = page2.status;
+      const page2 = this.cache.getPage(path);
+      const oldStatus = page2.ff_status;
       const isChanged = await this.correctNote(page2);
-      if (!isChanged && page2.status == oldPage.status)
+      if (!isChanged && page2.ff_status == oldPage.ff_status)
         continue;
       new import_obsidian4.Notice(
-        `${page2.file.name} - change status: ${oldStatus} => ${page2.status}`
+        `${page2.file.name} - change status: ${oldStatus} => ${page2.ff_status}`
       );
       const child = await getParentNote(page2);
       for (let children of child) {
@@ -32505,146 +32761,35 @@ var StatusCorrector = class {
   }
 };
 
-// src/fileManager.ts
+// src/views/TickCheker.ts
 var import_obsidian5 = require("obsidian");
-var FileManager = class {
-  constructor(plg) {
-    this.app = plg.app;
-  }
-  async createFile(path) {
-    await this.app.vault.create(path, "");
-    new import_obsidian5.Notice(MSG_PLG_NAME + "created " + path);
-  }
-  async changePropertyFile(path, event) {
-    const tFile = this.app.metadataCache.getFirstLinkpathDest(path, "");
-    await this.app.fileManager.processFrontMatter(
-      tFile,
-      (property) => {
-        const property_ = CalendarEventToIDate(event);
-        property["date"] = property_["date"].toISOString().slice(0, -14);
-        property["timeStart"] = property_["timeStart"];
-        property["duration"] = property_["duration"];
-      }
-    );
-  }
-  async changeStatusFile(path, status) {
-    const tFile = this.app.metadataCache.getFirstLinkpathDest(path, "");
-    await this.app.fileManager.processFrontMatter(
-      tFile,
-      (property) => {
-        property["status"] = status;
-      }
-    );
-  }
-  async changeTickFile(path, tickname, event) {
-    const tFile = this.app.metadataCache.getFirstLinkpathDest(path, "");
-    const text = await this.app.vault.read(tFile);
-    const property = CalendarEventToIDate(event);
-    const date = property["date"].toISOString().slice(0, -14);
-    const regExp = new RegExp(`\\[t::\\s*${tickname}(,[^\\]]*|)\\]`, "gm");
-    const newString = `[t::${tickname},${date},${property["timeStart"]},${property["duration"]}]`;
-    await this.app.vault.modify(
-      tFile,
-      text.replace(regExp, newString)
-    );
-  }
-  openNote(event) {
-    var _a;
-    const tFile = this.app.metadataCache.getFirstLinkpathDest(
-      ((_a = event == null ? void 0 : event.extendedProps) == null ? void 0 : _a.notePath) || event.id,
-      ""
-    );
-    const leaf = this.app.workspace.getLeaf(true);
-    tFile && leaf.openFile(tFile);
-  }
-  async getPage(file) {
-    let result = {
-      file: {
-        path: "",
-        name: ""
-      },
-      date: new Date(),
-      timeStart: null,
-      duration: null,
-      ticks: []
-    };
-    const ticks = getTicksFromText(await this.app.vault.cachedRead(file));
-    await this.app.fileManager.processFrontMatter(
-      file,
-      (property) => {
-        const page = {
-          file: {
-            path: file.path,
-            name: file.basename
-          },
-          ticks,
-          ...property
-        };
-        const duration = dv.duration(property.duration);
-        if (duration)
-          page.duration = duration;
-        page.timeStart = dv.duration(property.timeStart);
-        page.date = dv.date(property.date);
-        result = page;
-      }
-    );
-    return result;
-  }
-  getTaskCount(page) {
-    var _a;
-    const result = {
-      done: 0,
-      all: 0
-    };
-    const tFile = this.app.vault.getFileByPath(page.file.path);
-    if (!tFile)
-      return result;
-    const items = (_a = this.app.metadataCache.getFileCache(tFile)) == null ? void 0 : _a.listItems;
-    if (items)
-      for (let item of items) {
-        if (item.task == void 0)
-          continue;
-        if (item.task == "x") {
-          ++result.done;
-        }
-        ++result.all;
-      }
-    return result;
-  }
-  async getText(path) {
-    const tFile = this.app.metadataCache.getFirstLinkpathDest(path, "");
-    const text = await this.app.vault.read(tFile);
-    return text;
-  }
-  async setText(path, text) {
-    const tFile = this.app.metadataCache.getFirstLinkpathDest(path, "");
-    await this.app.vault.modify(tFile, text);
-  }
-};
-
-// src/TickCheker.ts
-var import_obsidian6 = require("obsidian");
 var TickChecker = class {
-  constructor(idForCache, event_src, ptr) {
-    this.parent = ptr;
+  constructor(idForCache, eventSrc, cache, noteManager) {
+    this.cache = cache;
     this.idForCache = idForCache;
-    this.parent.cache.subscribe(idForCache, event_src, this).then((data) => this.process(data));
+    this.eventSrc = eventSrc;
+    this.noteManager = noteManager;
   }
-  async process(pages) {
-    for (let page of pages) {
-      for (let tick of page.ticks) {
-        if (isNaN(safeParseInt(tick.name)))
-          continue;
-        let text = await this.parent.fileManager.getText(page.file.path);
-        const regExp = new RegExp(`\\[t::\\s*${tick.name}(,[^\\]]*|)\\]`, "gm");
-        await this.parent.fileManager.setText(
-          page.file.path,
-          text.replace(regExp, `[t::${tick.name}_$1]`)
-        );
-        new import_obsidian6.Notice(MSG_PLG_NAME + `change tickname in ${page.file.name}: ${tick.name}`);
-      }
+  async init() {
+    const data = await this.cache.subscribe(this.idForCache, this.eventSrc, this);
+    const calcs = data.map(
+      (el) => this.process(el)
+    );
+    await Promise.all(calcs);
+    this.cache.unsubscribe(this.idForCache);
+  }
+  async process(page) {
+    for (let tick of page.ticks) {
+      if (isNaN(safeParseInt(tick.name)))
+        continue;
+      let text = await this.noteManager.getText(page.file.path);
+      const regExp = new RegExp(`\\[t::\\s*${tick.name}(,[^\\]]*|)\\]`, "gm");
+      await this.noteManager.setText(
+        page.file.path,
+        text.replace(regExp, `[t::${tick.name}_$1]`)
+      );
+      new import_obsidian5.Notice(`${MSG_PLG_NAME}: change tickname in ${page.file.name}: ${tick.name}`);
     }
-    this.parent.cache.unsubscribe(this.idForCache);
   }
   renameFile(newPage, oldPage) {
   }
@@ -32658,20 +32803,247 @@ var TickChecker = class {
   }
 };
 
+// src/NoteManager.ts
+var import_obsidian6 = require("obsidian");
+var NoteManager = class {
+  constructor(vault, metadataCache, fileManager, workspace) {
+    this.vault = vault;
+    this.metadataCache = metadataCache;
+    this.fileManager = fileManager;
+    this.workspace = workspace;
+  }
+  async createFile(path) {
+    await this.vault.create(path, "");
+    new import_obsidian6.Notice(MSG_PLG_NAME + "created " + path);
+  }
+  async changePropertyFile(path, event) {
+    const tFile = this.metadataCache.getFirstLinkpathDest(path, "");
+    await this.fileManager.processFrontMatter(
+      tFile,
+      (property) => {
+        property["ff_date"] = event["ff_date"].toISOString().slice(0, -14);
+        property["ff_timeStart"] = event["ff_timeStart"];
+        property["ff_duration"] = event["ff_duration"];
+      }
+    );
+  }
+  async changeStatusFile(path, status) {
+    const tFile = this.metadataCache.getFirstLinkpathDest(path, "");
+    await this.fileManager.processFrontMatter(
+      tFile,
+      (property) => {
+        property["ff_status"] = status;
+      }
+    );
+  }
+  async changeTickFile(path, tickname, event) {
+    const tFile = this.metadataCache.getFirstLinkpathDest(path, "");
+    const text = await this.vault.read(tFile);
+    const regExp = new RegExp(`\\[t::\\s*${tickname}(,[^\\]]*|)\\]`, "gm");
+    const date = event["ff_date"].toISOString().slice(0, -14);
+    const newString = `[t::${tickname},${date},${event["ff_timeStart"]},${event["ff_duration"]}]`;
+    await this.vault.modify(
+      tFile,
+      text.replace(regExp, newString)
+    );
+  }
+  openNote(event) {
+    var _a;
+    const tFile = this.metadataCache.getFirstLinkpathDest(
+      ((_a = event == null ? void 0 : event.extendedProps) == null ? void 0 : _a.notePath) || event.id,
+      ""
+    );
+    const leaf = this.workspace.getLeaf(true);
+    tFile && leaf.openFile(tFile);
+  }
+  async getPage(file) {
+    var _a;
+    const result = {
+      file: {
+        path: file.path,
+        name: file.basename
+      },
+      ticks: getTicksFromText(await this.vault.cachedRead(file)),
+      ff_duration: "",
+      ff_timeStart: "",
+      // TODO из-за того, что не все заметки имеют ff_date, он должен возвращать null, но это bad practice
+      //@ts-ignore
+      ff_date: null
+    };
+    const property = (_a = this.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
+    if (!property) {
+      return result;
+    }
+    const added = {
+      ff_duration: dv.duration(property.ff_duration),
+      ff_timeStart: dv.duration(property.ff_timeStart),
+      ff_date: dv.date(property.ff_date),
+// ff_status: property.ff_status
+    };
+    return {
+      ...result,
+      ...property,
+      ...added
+    };
+  }
+  getTaskCount(page) {
+    var _a;
+    const result = {
+      done: 0,
+      all: 0
+    };
+    const tFile = this.vault.getFileByPath(page.file.path);
+    if (!tFile)
+      return result;
+    const items = (_a = this.metadataCache.getFileCache(tFile)) == null ? void 0 : _a.listItems;
+    if (items)
+      for (let item of items) {
+        if (item.task == void 0)
+          continue;
+        if (item.task == "x") {
+          ++result.done;
+        }
+        ++result.all;
+      }
+    return result;
+  }
+  async getText(path) {
+    const tFile = this.metadataCache.getFirstLinkpathDest(path, "");
+    const text = await this.vault.read(tFile);
+    return text;
+  }
+  async setText(path, text) {
+    const tFile = this.metadataCache.getFirstLinkpathDest(path, "");
+    await this.vault.modify(tFile, text);
+  }
+};
+
+// src/vaultOps.ts
+var import_obsidian7 = require("obsidian");
+var VaultOps = class {
+  constructor(vault) {
+    this.vault = vault;
+  }
+  async getTFile(path) {
+    const file = this.vault.getAbstractFileByPath(path);
+    if (file && file instanceof import_obsidian7.TFile) {
+      return file;
+    } else {
+      return null;
+    }
+  }
+  // if checking a folder, require including the last / in the path param
+  async ensureFolderExists(path) {
+    var _a;
+    const folderPath = ((_a = path.match(/^(.*)\//)) == null ? void 0 : _a[1]) || "";
+    if (folderPath == "") {
+      return false;
+    }
+    const parts = folderPath.split("/");
+    let currentPath = "";
+    for (const part of parts) {
+      currentPath += part + "/";
+      try {
+        const isExists = await this.vault.adapter.exists(currentPath, true);
+        if (isExists)
+          continue;
+        await this.vault.adapter.mkdir(currentPath);
+      } catch (e3) {
+        return false;
+      }
+    }
+    return true;
+  }
+  async getAllInObsidian() {
+    const rootPath = this.vault.configDir;
+    const folders = [rootPath + "/"];
+    const files = [];
+    const traverseDirectory = async (path) => {
+      let items;
+      try {
+        items = await this.vault.adapter.list(path);
+      } catch (error) {
+        return null;
+      }
+      for (const folder of items.folders) {
+        await traverseDirectory(folder);
+        let folderPath = folder.startsWith("/") ? folder.slice(1) : folder;
+        folderPath = folderPath === "" ? "" : `${folderPath}/`;
+        folders.push(folderPath);
+      }
+      for (const file of items.files) {
+        let filePath = file.startsWith("/") ? file.slice(1) : file;
+        files.push(filePath);
+      }
+    };
+    await traverseDirectory(rootPath);
+    return { folders, files };
+  }
+  async getAllInVault() {
+    const all = this.vault.getAllLoadedFiles();
+    const folders = [];
+    const files = [];
+    for (let file of all) {
+      if (file instanceof import_obsidian7.TFolder) {
+        let path = file.path.startsWith("/") ? file.path.slice(1) : file.path;
+        path = path == "" ? "" : `${path}/`;
+        folders.push(path);
+      } else if (file instanceof import_obsidian7.TFile) {
+        const path = file.path.startsWith("/") ? file.path.slice(1) : file.path;
+        files.push(path);
+      }
+    }
+    const obsidianItems = await this.getAllInObsidian();
+    const [obsidianFiles, obsidianFolders] = [obsidianItems.files, obsidianItems.folders];
+    folders.push(...obsidianFolders);
+    files.push(...obsidianFiles);
+    return { folders, files };
+  }
+  async getFoldersInVault() {
+    const { folders } = await this.getAllInVault();
+    return folders;
+  }
+  async getFilesInVault() {
+    const { files } = await this.getAllInVault();
+    return files;
+  }
+};
+
 // src/main.ts
-var MyPlugin = class extends import_obsidian7.Plugin {
+var MyPlugin = class extends import_obsidian8.Plugin {
   constructor(app, manifest) {
     super(app, manifest);
-    const fileManager = new FileManager(this);
-    this.fileManager = fileManager;
-    this.cache = new Cache2(this, fileManager);
+    const noteManager = new NoteManager(
+      this.app.vault,
+      this.app.metadataCache,
+      this.app.fileManager,
+      this.app.workspace
+    );
+    this.noteManager = noteManager;
+    this.cache = new Cache2(this.noteManager, this.app.vault);
   }
   async onload() {
     await this.loadSettings();
     this.initRegister();
-    await new TickChecker(3 /* TICK_CHECKER */, [EVENT_SRC], this);
+    const src = [];
+    for (let i3 of this.settings.source.noteSources) {
+      const tmp = Src.fromSrcJson(i3);
+      if (tmp)
+        src.push(tmp);
+    }
+    this.tickChecker = new TickChecker(
+      3 /* TICK_CHECKER */,
+      src,
+      this.cache,
+      this.noteManager
+    );
     if (this.settings.statusCorrector.isOn) {
-      this.statusCorrector = new StatusCorrector(2 /* STATUS_CORRECTOR */, [EVENT_SRC], this);
+      this.statusCorrector = new StatusCorrector(
+        2 /* STATUS_CORRECTOR */,
+        src,
+        this.cache,
+        this.noteManager
+      );
       if (this.settings.statusCorrector.startOnStartUp)
         this.statusCorrector.correctAllNotes();
       this.addCommand({
@@ -32682,10 +33054,21 @@ var MyPlugin = class extends import_obsidian7.Plugin {
         }
       });
     }
+    this.app.workspace.onLayoutReady(() => this.init());
     this.registerView(
       VIEW_TYPE,
-      (leaf) => new CalendarView(leaf, 1 /* CALENDAR */, [EVENT_SRC], this)
-      // TODO EVENT_SRC брать из настроек
+      (leaf) => {
+        this.calendar = new CalendarView(
+          leaf,
+          1 /* CALENDAR */,
+          src,
+          this.settings.calendar,
+          this.cache,
+          this.noteManager,
+          this.settings.source.defaultCreatePath
+        );
+        return this.calendar;
+      }
     );
     this.addRibbonIcon("info", MSG_PLG_NAME + "Open Calendar", () => this.activateView());
     this.addCommand({
@@ -32704,8 +33087,14 @@ var MyPlugin = class extends import_obsidian7.Plugin {
     });
   }
   onunload() {
-    if (this.settings.statusCorrector.isOn)
-      this.statusCorrector.destroy();
+    var _a;
+    (_a = this.statusCorrector) == null ? void 0 : _a.destroy();
+  }
+  async init() {
+    var _a, _b;
+    await this.cache.init();
+    (_a = this.tickChecker) == null ? void 0 : _a.init();
+    (_b = this.statusCorrector) == null ? void 0 : _b.init();
   }
   initRegister() {
     this.registerEvent(
@@ -32767,6 +33156,12 @@ var MyPlugin = class extends import_obsidian7.Plugin {
   }
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    this.addSettingTab(new MySettingTab(this.app, this));
+    this.addSettingTab(
+      new MySettingTab(
+        this.app,
+        this,
+        new VaultOps(this.app.vault)
+      )
+    );
   }
 };

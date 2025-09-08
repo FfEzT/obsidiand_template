@@ -309,5 +309,14 @@
       ],
       "key": "O"
     }
+  ],
+  "datepicker:insert-current-date": [
+    {
+      "modifiers": [
+        "Mod",
+        "Shift"
+      ],
+      "key": ","
+    }
   ]
 }

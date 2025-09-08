@@ -4,26 +4,23 @@ function parseTextTick(str) {
             return null
 
         const name = args[0]?.trim()
-        const date = dv.date(args[1]?.trim())
-        const timeStart = dv.duration(args[2]?.trim())
+        const ff_date = dv.date(args[1]?.trim())
+        const ff_timeStart = dv.duration(args[2]?.trim())
 
-        const tempDuration = args[3]?.trim()
-        const duration = tempDuration == 'x'
-        ? 'x'
-        : dv.duration(args[3]?.trim())
+        const ff_duration = dv.duration(args[3]?.trim())
 
         if (name == '')
             return null
 
-        return {name, date, timeStart, duration}
+        return {name, ff_date, ff_timeStart, ff_duration}
 }
 
 function parseArrTick(arr) {
     return {
         name: arr[0],
-        date: arr[1],
-        timeStart: arr[2],
-        duration: arr[3]
+        ff_date: arr[1],
+        ff_timeStart: arr[2],
+        ff_duration: arr[3]
     }
 }
 
@@ -44,24 +41,26 @@ function convertDvToTarr(t) {
     return res
 }
 
+const varDateDv = dv.page("var/date")
 const currentDv = dv.current()
+
 let pages = dv.pages()
 .where(
     page => page.file.path.startsWith(currentDv.file.folder)
-        && !page.status?.contains("done")
+        && page.ff_status
+        && !page.ff_status?.contains("done")
 )
-.sort(p => p.status)
+.sort(p => p.ff_status)
 .array()
 
-// let startDay = Math.max(dv.date("today"), currentDv.startDay)
-let startDay = currentDv.startDay
+let startDay = varDateDv.ff_startDay
 function checkCond(obj) {
-    if (!obj.timeStart)
+    if (!obj.ff_timeStart)
         return false
 
-    return obj.date &&
-    obj.date < currentDv.endRange + dv.duration("1d") &&
-    obj.date >= startDay
+    return obj.ff_date &&
+    obj.ff_date < varDateDv.ff_endRange + dv.duration("1d") &&
+    obj.ff_date >= startDay
 }
 
 const rootHours = {}
@@ -127,11 +126,8 @@ const dayHours = {}
 
 let result = 0
 for (let page of pages) {
-    if (checkCond(page) && page.duration) {
-        if (page.duration == "x")
-            page.duration = dv.duration("1h30m")
-
-        const hours = page.duration.as("hour")
+    if (checkCond(page) && page.ff_duration) {
+        const hours = page.ff_duration.as("hour")
 
         result += hours
 
@@ -139,7 +135,7 @@ for (let page of pages) {
 
         addToMapNumber(
             dayHours,
-            dv.date(page.date).toISODate(),
+            dv.date(page.ff_date).toISODate(),
             hours
         )
     }
@@ -148,27 +144,23 @@ for (let page of pages) {
         .filter(a => checkCond(a))
 
         for (let i of tmp) {
-            if (!i.duration) {
+            if (!i.ff_duration) {
                 continue
             }
-
-            if (i.duration == "x")
-                i.duration = dv.duration("1h30m")
-
-            const hours = i.duration.as("hour")
+            const hours = i.ff_duration.as("hour")
 
             result += hours
             addStatistic(rootHours, page, hours)
 
             addToMapNumber(
                 dayHours,
-                dv.date(i.date).toISODate(),
+                dv.date(i.ff_date).toISODate(),
                 hours
             )
         }
     }
 }
-result -= currentDv.offset
+result -= currentDv.ff_offset
 
 const getProgress = (countDone, countAll) => {
     const fraction = countDone/countAll
@@ -188,12 +180,12 @@ Object.assign(containerEl.style, {
 });
 
 const progressBar = containerEl.createEl('progress');
-Object.assign(progressBar, {max: currentDv.targetCapacity, value: result});
+Object.assign(progressBar, {max: currentDv.ff_targetCapacity, value: result});
 Object.assign(progressBar.style, {"width":"100%", "height":"10px"});
 
 const progressText = containerEl.createEl('div');
 Object.assign(progressText, {
-    'textContent': `${getProgress(result, currentDv.targetCapacity)}% ${result}/${currentDv.targetCapacity}`,
+    'textContent': `${getProgress(result, currentDv.ff_targetCapacity)}% ${result}/${currentDv.ff_targetCapacity}`,
 });
 
 dv.paragraph(containerEl)
@@ -212,7 +204,7 @@ for (let key in dayHours) {
 dayToHours.sort((a,b) => a[0] < b[0]? -1 : 1)
 dayToHours.push(["all", summ])
 dv.table(
-    ["date", "hours"],
+    ["ff_date", "hours"],
     dayToHours
 )
 

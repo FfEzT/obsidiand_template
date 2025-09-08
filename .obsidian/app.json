@@ -25,7 +25,7 @@
     "editor:toggle-source",
     "datepicker:insert-date"
   ],
-  "trashOption": "none",
+  "trashOption": "system",
   "rightToLeft": false,
   "vimMode": false,
   "mobilePullAction": "command-palette:open",
@@ -34,10 +34,11 @@
     "pageSize": "Letter",
     "landscape": false,
     "margin": "0",
-    "downscalePercent": 100
+    "downscalePercent": 53
   },
-  "readableLineLength": true,
+  "readableLineLength": false,
   "userIgnoreFilters": [
     "script/"
-  ]
+  ],
+  "propertiesInDocument": "visible"
 }

@@ -1,3 +1,6 @@
+folder=$(dirname $0)
+cd $folder
+
 cd ..
 git add .
 git status
@@ -11,4 +14,6 @@ git push
 echo "------------------push"
 
 git status
+echo waiting...
+read
 git log --oneline --graph --decorate

@@ -38,10 +38,10 @@ while (stack.length > 0) {
 
     const inlinks = meta.file.inlinks.array()
     // if (inlinks.length == 0) {
-    if (meta.status) {
+    if (meta.ff_status) {
         ++countAll
 
-        if (meta.status.includes("done"))
+        if (meta.ff_status.includes("done"))
             ++countDone
     }
     // }

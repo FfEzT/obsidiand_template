@@ -1,7 +1,7 @@
 dv.execute(`
-    TABLE frequency, date
+    TABLE ff_frequency, ff_date
 
     WHERE contains(file.path, this.file.folder)
-    AND frequency
-    SORT date, timeStart, frequency DESC
+    AND ff_frequency
+    SORT ff_date, ff_timeStart, ff_frequency DESC
 `)

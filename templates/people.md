@@ -1,6 +1,0 @@
----
-date: 
----
-parent:: [[!people]]
-
----

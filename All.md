@@ -1,11 +1,11 @@
 # без in/out ссылок
 ```
-TABLE date, status
+TABLE ff_date, ff_status
 FROM !"templates"
 WHERE !file.inlinks
-AND !parent
-AND status
-SORT status, date
+AND !ff_parent
+AND ff_status
+SORT ff_status, ff_date
 ```
 
 ---
@@ -13,9 +13,9 @@ SORT status, date
 # корень и done
 ```
 TABLE file.inlinks
-WHERE !parent
-AND contains(status, "🟢done")
-AND status
+WHERE !ff_parent
+AND contains(ff_status, "🟢done")
+AND ff_status
 ```
 
 ---
@@ -29,10 +29,10 @@ WHERE t
 # All
 
 ```dataview
-TABLE status, date, frequency, parent,
+TABLE ff_status, ff_date, frequency, ff_parent,
 	file.inlinks AS Дети
 FROM "databases"
-SORT status ASC, date ASC, timeStart
+SORT ff_status ASC, ff_date ASC, ff_timeStart
 ```
-WHERE contains(status, "in progress")
+WHERE contains(ff_status, "in progress")
 ---

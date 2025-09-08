@@ -1,14 +1,11 @@
 ---
-date: 
-timeStart: 
-duration: 
-status: 🔵in progress
-deadline: 
-Impact: 
-Confidence: 
-Effort: 
+ff_date:
+ff_timeStart:
+ff_duration:
+ff_status: 🔵in progress
+ff_parent:
+ff_responsible:
 ---
-parent:: 
 progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
 
 `$= dv.view('script/child');`

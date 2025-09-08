@@ -9,7 +9,12 @@
   "datepicker",
   "mermaid-tools",
   "obsidian-spaced-repetition",
-  "my-obsidian-calendar-plugin",
   "oz-clear-unused-images",
-  "omnisearch"
+  "omnisearch",
+  "obsidian-tracker",
+  "excalibrain",
+  "obsidian-excalidraw-plugin",
+  "obsidian-charts",
+  "f_fit",
+  "my-obsidian-calendar-plugin"
 ]

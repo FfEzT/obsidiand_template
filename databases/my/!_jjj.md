@@ -1,0 +1,8 @@
+
+---
+
+```dataview
+TABLE
+FROM [[#]]
+```
+
