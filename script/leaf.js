@@ -91,7 +91,7 @@ let pages = dv.pages()
 
 const result = []
 
-// ff_status, ff_parent, replace(progress, "current()", PROG) AS progress
+// ff_status, ff_l_parent, replace(progress, "current()", PROG) AS progress
 for (let page of pages) {
     if (checkFile(page)) {
         result.push(
@@ -103,7 +103,7 @@ for (let page of pages) {
                 !!page.ff_impact||null, // note чтобы показывались "...", а не "false"
                 !!page.ff_confidence||null, // note чтобы показывались "...", а не "false"
                 !!page.ff_duration||null, // note чтобы показывались "...", а не "false"
-                page.ff_parent
+                page.ff_l_parent
             ]
         )
     }
@@ -120,6 +120,6 @@ for (let page of pages) {
 }
 
 dv.table(
-    ["File", "ff_status", "progress", ..."dice", "ff_parent"],
+    ["File", "ff_status", "progress", ..."dice", "ff_l_parent"],
     result
 )

@@ -2,7 +2,7 @@
 ff_date: ""
 ff_status: 🟡🟦child in progress
 ---
-ff_parent:: [[../!коммуникации]]
+ff_l_parent:: [[!коммуникации]]
 
 ---
 

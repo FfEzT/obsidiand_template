@@ -1,4 +1,4 @@
-[[!_jjj]]
+[[databases/my/!_jjj]]
 ---
 
 `$= dv.view('script/bigPlans');`

@@ -89,9 +89,9 @@ let pages = dv.pages()
 .sort(p => p.ff_status)
 .array()
 
-const result = []
+let result = []
 
-// ff_status, ff_parent, replace(progress, "current()", PROG) AS progress
+// ff_status, ff_l_parent, replace(progress, "current()", PROG) AS progress
 for (let page of pages) {
     if (checkFile(page)) {
         result.push(
@@ -103,7 +103,8 @@ for (let page of pages) {
                 page.ff_impact ? page.ff_impact : null, // note чтобы показывались "...", а не "false"
                 page.ff_confidence ? page.ff_confidence : null, // note чтобы показывались "...", а не "false"
                 page.ff_duration ? page.ff_duration : null, // note чтобы показывались "...", а не "false"
-                page.ff_parent
+                page.ff_l_parent,
+                page.ff_l_plan
             ]
         )
     }
@@ -113,13 +114,25 @@ for (let page of pages) {
 
         for (let i of tmp) {
             result.push(
-                ["("+page.file.link+")"+i.name, page.ff_status, "", ""]
+                ["("+page.file.link+")"+i.name, page.ff_status, "", "", page.ff_l_plan]
             )
         }
     }
 }
 
+result
+    .sort(
+        (a,b) => {
+            if (a[8] instanceof Array && !(b[8] instanceof Array))
+                return 1
+            return -1
+        }
+    )
+    .sort(
+        (a,b) => a[1] < b[1]? -1:1
+    )
+
 dv.table(
-    ["File", "ff_status", "progress", ..."dice", "ff_parent"],
+    ["File", "ff_status", "progress", ..."dice", "ff_l_parent", "ff_l_plan"],
     result
 )

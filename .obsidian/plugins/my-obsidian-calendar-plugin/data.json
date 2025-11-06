@@ -4,12 +4,13 @@
     "startOnStartUp": true
   },
   "calendar": {
-    "slotDuration": "00:30:00",
+    "slotDuration": "00:15:00",
     "colours": {
       "frequency": "#8A1717",
       "done": "#008E04",
       "tick": "#457E7E",
-      "default": "#5e3fa8"
+      "default": "#5e3fa8",
+      "noStatus": "#fff"
     },
     "restTime": [
       {
@@ -73,5 +74,22 @@
         "color": "#305B60"
       }
     ]
+  },
+  "source": {
+    "noteSources": [
+      {
+        "path": "databases/",
+        "excludes": []
+      },
+      {
+        "path": "databases/my/",
+        "excludes": []
+      },
+      {
+        "path": "databases/shared/",
+        "excludes": []
+      }
+    ],
+    "defaultCreatePath": "databases/my/"
   }
 }

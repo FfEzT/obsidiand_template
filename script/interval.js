@@ -63,7 +63,20 @@ const result = []
 for (let page of pages) {
     if (checkCond(page)) {
         result.push(
-            [page.file.link, page.ff_status, page.ff_date, page.ff_timeStart, page.ff_duration, page.ff_frequency]
+            [
+                page.file.link,
+                page.ff_status,
+                page.ff_date,
+
+                // NOTE: если в page.ff_timeStart стоит 0h0m, то в таблице он будет пустой ячейкой
+                // а так будет 0h
+                page.ff_timeStart?.conversionAccuracy && page.ff_timeStart == ""
+                  ? "0h"
+                  : page.ff_timeStart,
+
+                page.ff_duration,
+                page.ff_frequency
+            ]
         )
     }
     if (page.t) {
@@ -72,7 +85,20 @@ for (let page of pages) {
 
         for (let i of tmp) {
             result.push(
-                ["("+page.file.link+")"+i.name, page.ff_status, i.ff_date, i.ff_timeStart, i.ff_duration, ""]
+                [
+                    "("+page.file.link+")"+i.name,
+                    page.ff_status,
+                    i.ff_date,
+
+                    // NOTE: если в page.ff_timeStart стоит 0h0m, то в таблице он будет пустой ячейкой
+                    // а так будет 0h
+                    i.ff_timeStart?.conversionAccuracy && i.ff_timeStart == ""
+                      ? "0h"
+                      : i.ff_timeStart,
+
+                    i.ff_duration,
+                    ""
+                ]
             )
         }
     }

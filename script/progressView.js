@@ -1,3 +1,12 @@
+function getLinkClass() {
+    const tempPage = dv.current()
+    if (tempPage?.file?.link) {
+        return tempPage.file.link.constructor
+    }
+    return null
+}
+const Link = getLinkClass()
+
 const calcDoneTasks = (page) => {
     let countDone = 0
     for (let i of page.tasks.array()) {
@@ -37,21 +46,33 @@ while (stack.length > 0) {
     countDone += calcDoneTasks(meta.file)
 
     const inlinks = meta.file.inlinks.array()
-    // if (inlinks.length == 0) {
     if (meta.ff_status) {
         ++countAll
 
         if (meta.ff_status.includes("done"))
             ++countDone
     }
-    // }
 
     for (let inlink of inlinks) {
         if (pages.has(inlink.path))
             continue
 
         pages.add(inlink.path)
-        stack.push(inlink.path)
+
+        const page = dv.page(inlink.path)
+
+        if (page.ff_l_parent instanceof Link
+            && page.ff_l_parent.path === meta.file.path)
+        {
+            stack.push(inlink.path)
+        }
+        else if (page.ff_l_parent instanceof Array) {
+            const cond = page.ff_l_parent.some(
+                el => el instanceof Link && el.path === meta.file.path
+            )
+
+            cond && stack.push(inlink.path)
+        }
     }
 }
 

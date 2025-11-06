@@ -1,5 +1,5 @@
 
-[[!_jjj]]
+[[databases/!_fff]]
 ---
 
 ###### order by DICE
@@ -63,7 +63,7 @@ let pages = dv.pages()
 
 let result = []
 
-// ff_status, ff_parent, replace(progress, "current()", PROG) AS progress
+// ff_status, ff_l_parent, replace(progress, "current()", PROG) AS progress
 for (let page of pages) {
 	if (page.ff_frequency)
 		continue

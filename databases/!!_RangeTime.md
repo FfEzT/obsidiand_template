@@ -1,18 +1,17 @@
 ---
-ff_targetCapacity: 196
+ff_targetCapacity: 203
 ff_offset:
 ---
 
-[[!_jjj]]
 
-> capacity = 14 рабочих часа * 14 дней = 196
+> capacity = 14,5 рабочих часа * 14 дней = 203
 
 
 ---
 
 
 ### capacity
-\^373e0f
+
 
 `$= dv.view('script/capacity')`
 

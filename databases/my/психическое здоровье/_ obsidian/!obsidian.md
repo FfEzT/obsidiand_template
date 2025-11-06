@@ -6,7 +6,7 @@ ff_status: 🟡🟦child in progress
 ff_deadline:
 ff_impact:
 ff_confidence:
-ff_parent:
+ff_l_parent:
   - "[[!психическое здоровье]]"
 ---
 progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`

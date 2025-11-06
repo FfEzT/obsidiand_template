@@ -1,15 +1,16 @@
 ---
-ff_date: 2025-09-13
-ff_timeStart: 23h0m
+ff_date: 2025-12-02
+ff_timeStart: ""
 ff_duration: 30m
 ff_status: 🔵in progress
 ff_frequency: 2 week
+ff_confidence: 1
 ---
 
 
 #bookmark
 
-ff_parent:: [[!obsidian]]
+ff_l_parent:: [[!obsidian]]
 progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
 
 `$= dv.view('script/child');`
@@ -17,33 +18,23 @@ progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
 
 ---
 ### daily-notes
-- поменять рычкова в расписании (казакову)
-- смогу ли с владом встретиться на др?
+
 ---
 
 ### Протокол:
 - ответить всем в чатах
+- [[Вова]]
 - Календарь
-	- проверить прошедший день
-	- проверить all-day задачи
-	- проверить \^\^a1edae - `!!_TODAY`
-	- проверить - `!!_Don't forget`
-	- проверить нагрузку в `!!RangeTime`
+	- проверить - `!!_TODAY`
+		- [[databases/my/!!_TODAY|!!_TODAY]]
+	- приоритизация
+		- [[databases/my/!!_DICE|!!_DICE]]
+	- [[databases/!!_RangeTime|!!_RangeTime]] проверить нагрузку
 	- проверить следующий день
 - проверить daily-notes здесь
 - занулить долг по времени \^\^6849ad
 
 ---
-- [t::просто журнал,2025-09-21,23h0m,30m]
-- [t::2_,2025-09-15,23h0m,30m]
-- [t::3_,2025-09-16,23h0m,30m]
-- [t::4_,2025-09-17,23h0m,30m]
-- [t::5_,2025-09-18,23h0m,30m]
-- [t::6_,2025-09-19,23h0m,30m]
-- [t::7_,2025-09-20,23h0m,30m]
-- [t::просто журнал2,2025-09-14,23h0m,30m]
-- [t::9_,2025-09-08,23h0m,30m]
-- [t::10_,2025-09-09,23h0m,30m]
-- [t::11_,2025-09-10,23h0m,30m]
-- [t::12_,2025-09-11,23h0m,30m]
-- [t::13_,2025-09-12,23h0m,30m]
+
+
+> [!tip] Поставил тики на повторение вс-пт на 23:00 на 30 минут. каждую неделю

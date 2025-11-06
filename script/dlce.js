@@ -1,6 +1,43 @@
+function parseTextTick(str) {
+    const args = str.split(',')
+        if (!args)
+            return null
+
+        const name = args[0]?.trim()
+        const ff_date = dv.date(args[1]?.trim())
+        const ff_timeStart = dv.duration(args[2]?.trim())
+
+        const ff_duration = dv.duration(args[3]?.trim())
+
+        if (name == '')
+            return null
+
+        return {name, ff_date, ff_timeStart, ff_duration}
+}
+
+function convertDvToTarr(t) {
+    const res = []
+    if (typeof t == "string") {
+        const tmp = parseTextTick(t)
+        tmp && res.push(tmp)
+    }
+    else if (typeof t[0] == "number") {
+        res.push(parseArrTick(t))
+    }
+    else for (let i of t) {
+        res.push(
+            ...convertDvToTarr(i)
+        )
+    }
+    return res
+}
+
 function checkCond(obj) {
     if (!!obj.frequency)
         return false
+
+    if (obj.ff_status == "🔵in progress" && obj.ff_deadline)
+        return true
 
     if (varDateDv.ff_endRange && varDateDv.ff_startDay) {
         return obj.ff_date &&
@@ -28,20 +65,27 @@ function dice(page) {
         ).as("hour")
     dur = Math.max(dur, 1) || 1
 
+    let ff_impact = page.ff_impact || 0.25
+    let ff_confidence = page.ff_confidence || 30
+
     let effort = null
     if (page.ff_duration) {
-        effort = page.ff_duration
-        effort = effort.as("hours")
+        effort = page.ff_duration.as("hours")
     }
-    else
-        return null
+    else if (page.ff_deadline) {
+        effort = dv.duration("1h30m").as("hours")
 
+        if (!page.ff_impact) {
+            ff_impact = 1
+        }
+    }
+    else {
+        return null
+    }
 
     // NOTE, чтобы из-за effort оценка задачи не сильно падала
     effort = Math.pow(effort, 0.4)
 
-    let ff_impact = page.ff_impact || 0.5
-    let ff_confidence = page.ff_confidence || 50
     let result = ff_impact * ff_confidence /
         effort / dur
     result *= 100
@@ -67,7 +111,7 @@ let pages = dv.pages()
 
 let result = []
 
-// ff_status, ff_parent, replace(progress, "current()", PROG) AS progress
+// ff_status, ff_l_parent, replace(progress, "current()", PROG) AS progress
 for (let page of pages) {
     const _dice = dice(page)
 
@@ -91,10 +135,37 @@ for (let page of pages) {
                 page.ff_confidence,
             ]
         )
+        if (page.t) {
+            const tmp = convertDvToTarr(page.t)
+                .filter(a => checkCond(a))
+
+            for (let i of tmp) {
+                result.push(
+                    [
+                        "("+page.file.link+")"+i.name,
+                        page.ff_status,
+                        page.ff_date,
+
+                        // NOTE: если в page.ff_timeStart стоит 0h0m, то в таблице он будет пустой ячейкой
+                        // а так будет 0h
+                        page.ff_timeStart?.conversionAccuracy && page.ff_timeStart == ""
+                          ? "0h"
+                          : page.ff_timeStart,
+
+                        page.ff_duration,
+                        _dice,
+                        page.ff_deadline,
+                        page.ff_impact,
+                        page.ff_confidence,
+                    ]
+                )
+            }
+        }
     }
 }
 
-result = result.filter(p => p[2] != null)
+result = result
+// .filter(p => p[2] != null)
 .sort(
         (a, b) => {
                 if (!a[6] && b[6])

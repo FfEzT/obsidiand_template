@@ -1,11 +1,11 @@
 ---
-ff_date: 2025-09-13
-ff_duration: 1h
+ff_date: 2025-12-11
+ff_duration:
 ff_status: 🔵in progress
 ff_frequency: week
-ff_timeStart: 8h30m
+ff_timeStart:
 ---
-ff_parent:: [[!obsidian]]
+ff_l_parent:: [[!obsidian]]
 progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
 
 
@@ -15,7 +15,6 @@ progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
 `$= dv.view('script/child');`
 
 ---
-[t::one,2025-09-20,8h30m,1h]
 
 - [ ] почту проверь
 - chrome
@@ -25,3 +24,5 @@ progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
 - tg
 	- [ ] непрочитанные сообщения
 	- [ ] объединение задач и кидание в `было` или `будет`
+
+> [!tip] Тики на сб в 8:30 на час

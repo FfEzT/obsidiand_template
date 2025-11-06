@@ -1,8 +1,4 @@
-[[!_jjj]]
+[[databases/my/!_jjj]]
 ---
-
-\^a1edae
-
-
 
 `$= dv.view('script/today');`

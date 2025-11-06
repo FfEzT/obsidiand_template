@@ -318,5 +318,14 @@
       ],
       "key": ","
     }
+  ],
+  "extended-graph:enable-in-graph-view": [
+    {
+      "modifiers": [
+        "Alt",
+        "Mod"
+      ],
+      "key": "C"
+    }
   ]
 }

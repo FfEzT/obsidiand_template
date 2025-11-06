@@ -1,3 +1,12 @@
+function getLinkClass() {
+    // Создаем временную ссылку для определения класса
+    const tempPage = dv.current()
+    if (tempPage && tempPage.file && tempPage.file.link) {
+        return tempPage.file.link.constructor
+    }
+    return null
+}
+
 function parseTextTick(str) {
     const args = str.split(',')
         if (!args)
@@ -41,99 +50,122 @@ function convertDvToTarr(t) {
     return res
 }
 
-const currentDv = dv.current()
+function getRenderedTicks(page) {
+    if (!page.t)
+        return []
 
-
-// GET ff_blocks
-let blockers = dv.pages("[[#]]")
-.where(
-    page => {
-        if (page.ff_blocks?.find)
-            return page.ff_blocks.find(el => el.path == currentDv.file.path)
-
-        return page.ff_blocks?.path == currentDv.file.path
-    }
-)
-.sort(p => p.ff_status).sort(p => p.ff_date)
-.array()
-
-const result_block = []
-for (let blocker of blockers) {
-    result_block.push(
-        [blocker.file.link, blocker.ff_date, blocker.ff_status, blocker.progress?.replace("current()", "page('" + blocker.file.path + "')")]
-    )
-}
-// END GET ff_blocks
-
-
-
-
-// GET others inlinks
-let pages = dv.pages("[[#]]")
-// .where(
-//     page => {
-//         console.log(page.ff_parent)
-//         if (page.ff_parent?.find)
-//             return page.ff_parent.find(el => el.path == currentDv.file.path)
-
-//         return page.ff_parent?.path == currentDv.file.path
-//     }
-// )
-.sort(p => p.ff_status)
-.array()
-
-let result = []
-
-let currentPage = dv.current()
-if (currentPage.t) {
-    const tmp = convertDvToTarr(currentPage.t)
+    const result = []
+    const tmp = convertDvToTarr(page.t)
 
     for (let i of tmp) {
         result.push(
-            ["("+currentPage.file.link+")"+i.name, i.ff_date, currentPage.ff_status, "TICK"]
+            ["("+page.file.link+")"+i.name, i.ff_date, page.ff_status]
         )
     }
-}
 
-// ff_status, ff_parent, replace(progress, "current()", PROG) AS progress
-for (let page of pages) {
-    result.push(
-        [page.file.link, page.ff_date, page.ff_status, page.progress?.replace("current()", "page('" + page.file.path + "')")]
-    )
-}
-
-result.sort(
-    (a,b) => a[1] < b[1]? -1:1
-)
-
-
-// END GET other inlinks
-
-// remove blockers from result
-let tempResult = []
-for (let i of result) {
-    index = result_block.find(
-        el => el[0].path == i[0].path
+    result.sort(
+        (a,b) => a[1] < b[1]? -1:1
     )
 
-    if (index)
-        continue
-
-    tempResult.push(i)
+    return result
 }
-result = tempResult
 
+function getRelatedFields(page, searchingPath) {
+    const Link = getLinkClass()
 
+    const keys = []
+    for (let key in page) {
+        const val = page[key]
 
+        if (val instanceof Link) {
+            if (val?.path === searchingPath)
+                keys.push(key)
 
-// RENDER
-dv.table(
-    ["children", "ff_date", "ff_status", "progress"],
-    result
-)
+            continue
+        }
+        if ( !(val instanceof Array) )
+            continue
 
-if (result_block.length)
+        for (let link of val) {
+            if ( !(link instanceof Link) )
+                continue
+
+            if (link?.path === searchingPath) {
+                keys.push(key)
+
+                break
+            }
+        }
+    }
+    return keys
+}
+
+function getAllLinks(currentPath, defaultField) {
+    let pages = dv.pages("[[#]]")
+        .sort(p => p.ff_status).sort(p => p.ff_date)
+        .array()
+
+    // mapping: fieldName -> List[page]
+    const result = {}
+    result[defaultField] = []
+
+    for (let page of pages) {
+        const keys = getRelatedFields(page, currentPath)
+
+        for (let key of keys) {
+            if ( !(result[key] instanceof Array) )
+                result[key] = []
+
+            result[key].push(page)
+        }
+        if (keys.length == 0)
+            result[defaultField].push(page)
+    }
+
+    return result
+}
+
+function renderTicks(ticks) {
     dv.table(
-        ["blocker", "ff_date", "ff_status", "progress"],
-        result_block
+        ["ticks", "ff_date", "ff_status"],
+        ticks
     )
+}
+
+function renderFields(fieldToPages) {
+    for (let field in fieldToPages) {
+        const pages = fieldToPages[field]
+        if (pages.length == 0)
+            continue
+
+        const res = []
+        for (let page of pages) {
+            res.push(
+                [page.file.link, page.ff_date, page.ff_status, page.progress?.replace("current()", "page('" + page.file.path + "')")]
+            )
+            res.sort(
+                (a,b) => a[1] < b[1]? -1:1
+            )
+        }
+
+        dv.table(
+            [field, "ff_date", "ff_status", "progress"],
+            res
+        )
+    }
+
+}
+
+function main() {
+    const currentDv = dv.current()
+
+    const links = getAllLinks(currentDv.file.path, "ff_l_related")
+    const ticks = getRenderedTicks(currentDv)
+
+    if (ticks.length > 0)
+        renderTicks(ticks)
+
+    renderFields(links)
+}
+
+main()

@@ -5,6 +5,17 @@
   "historyLimit": 25,
   "history": [
     ":dart:",
+    ":arrow_down_small:",
+    ":arrow_heading_down:",
+    ":blue_square:",
+    ":purple_circle:",
+    ":red_circle:",
+    ":orange_circle:",
+    ":fire:",
+    ":arrow_down:",
+    ":heart_on_fire:",
+    ":calendar:",
+    ":umbrella:",
     ":100:",
     ":date:",
     ":exclamation:",
@@ -17,12 +28,6 @@
     ":beer:",
     ":runner:",
     ":smoking:",
-    ":link:",
-    ":ballot_box_with_check:",
-    ":fire:",
-    ":rofl:",
-    ":b:",
-    ":3rd_place_medal:",
-    ":2nd_place_medal:"
+    ":link:"
   ]
 }

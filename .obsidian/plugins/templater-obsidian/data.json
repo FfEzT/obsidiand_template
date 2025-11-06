@@ -17,14 +17,13 @@
     {
       "folder": "databases",
       "template": "templates/task.md"
-    },
+    }
+  ],
+  "enable_file_templates": false,
+  "file_templates": [
     {
-      "folder": "databases/people",
-      "template": "templates/people.md"
-    },
-    {
-      "folder": "databases/Книги",
-      "template": "templates/task.md"
+      "regex": ".*",
+      "template": ""
     }
   ],
   "syntax_highlighting": true,

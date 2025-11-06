@@ -1,10 +1,10 @@
 ---
-ff_date: 2025-09-20
-ff_timeStart: 22h0m
-ff_duration: 1h
+ff_date: 2025-12-04
+ff_timeStart:
+ff_duration:
 ff_status: 🔵in progress
 ff_frequency: week
-ff_parent:
+ff_l_parent:
   - "[[later]]"
 ---
 progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
@@ -12,7 +12,8 @@ progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
 `$= dv.view('script/child');`
 
 ---
-> Заметки из "obsidian будущее/прошлое" переношу в obsidian
+-  Заметки из "obsidian будущее/прошлое" переношу в obsidian
+- убрать чаты с главной тг по папкам
 
 
-- [t::one more,2025-09-13,21h0m,1h]
+> [!tip] Тики: сб, 21:30 на час
