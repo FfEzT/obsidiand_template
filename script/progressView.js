@@ -33,7 +33,7 @@ const getProgress = (countDone, countAll) => {
 let countAll  = 0
 let countDone = 0
 
-const page = dv.page(input.file).file.path
+const page = input.file
 const pages = new Set()
 const stack = [page]
 while (stack.length > 0) {

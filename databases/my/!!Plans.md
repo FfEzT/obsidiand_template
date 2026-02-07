@@ -3,6 +3,5 @@ ff_l_parent:
   - "[[!_my]]"
 ---
 
----
 
-`$= dv.view('script/today');`
+`$= dv.view('script/plans');`

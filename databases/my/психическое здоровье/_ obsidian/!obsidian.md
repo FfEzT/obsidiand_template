@@ -9,7 +9,7 @@ ff_confidence:
 ff_l_parent:
   - "[[!психическое здоровье]]"
 ---
-progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
+progress:: `$= dv.view('script/progressView', {file: dv.current().file.path})`
 
 
 ---

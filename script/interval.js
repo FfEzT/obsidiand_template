@@ -75,7 +75,7 @@ for (let page of pages) {
                   : page.ff_timeStart,
 
                 page.ff_duration,
-                page.ff_frequency
+                page.ff_confidence
             ]
         )
     }
@@ -97,7 +97,7 @@ for (let page of pages) {
                       : i.ff_timeStart,
 
                     i.ff_duration,
-                    ""
+                    page.ff_confidence
                 ]
             )
         }
@@ -109,6 +109,6 @@ result.sort(
 )
 
 dv.table(
-    ["File", "ff_status", "ff_date", "ff_timeStart", "ff_duration", "frequency"],
+    ["File", "ff_status", "ff_date", "ff_timeStart", "ff_duration", "ff_confidence"],
     result
 )

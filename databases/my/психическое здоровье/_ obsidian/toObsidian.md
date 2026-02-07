@@ -7,7 +7,7 @@ ff_frequency: week
 ff_l_parent:
   - "[[later]]"
 ---
-progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
+progress:: `$= dv.view('script/progressView', {file: dv.current().file.path})`
 
 `$= dv.view('script/child');`
 

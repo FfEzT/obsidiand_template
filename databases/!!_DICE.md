@@ -1,6 +1,10 @@
-
-[[databases/!_fff]]
 ---
+ff_l_parent:
+  - "[[databases/!_fff|!_fff]]"
+---
+
+---
+
 
 ###### order by DICE
 `$= dv.view('script/dlce2');`

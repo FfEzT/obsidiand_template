@@ -14636,7 +14636,7 @@ module.exports = __toCommonJS(main_exports);
 var import_obsidian9 = require("obsidian");
 
 // src/views/CalendarView.ts
-var import_obsidian = require("obsidian");
+var import_obsidian2 = require("obsidian");
 
 // src/constants.ts
 var MSG_PLG_NAME = "MyCalendar";
@@ -14757,6 +14757,8 @@ function pathToFileWithoutFileName(path) {
 }
 function IDateToCalendarEvent(args) {
   var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+  if (!args.ff_date)
+    return;
   const structure = {
     start: new Date(args.ff_date),
     allDay: false
@@ -14812,7 +14814,7 @@ function CalendarEventToIDate(event) {
   return result;
 }
 function getTicksFromText(text) {
-  var _a, _b, _c, _d, _e;
+  var _a, _b, _c, _d, _e, _f;
   const result = [];
   const regExpTicks = /\[t::.+\]/gm;
   const matches = text.match(regExpTicks);
@@ -14822,10 +14824,10 @@ function getTicksFromText(text) {
       if (!args)
         continue;
       const name = (_a = args[0]) == null ? void 0 : _a.trim();
-      const ff_date = dv.date((_b = args[1]) == null ? void 0 : _b.trim());
-      const ff_timeStart = dv.duration((_c = args[2]) == null ? void 0 : _c.trim());
-      const tempDuration = (_d = args[3]) == null ? void 0 : _d.trim();
-      const ff_duration = dv.duration((_e = args[3]) == null ? void 0 : _e.trim());
+      const ff_date = (_c = dv.date((_b = args[1]) == null ? void 0 : _b.trim())) == null ? void 0 : _c.toJSDate();
+      const ff_timeStart = dv.duration((_d = args[2]) == null ? void 0 : _d.trim());
+      const tempDuration = (_e = args[3]) == null ? void 0 : _e.trim();
+      const ff_duration = dv.duration((_f = args[3]) == null ? void 0 : _f.trim());
       if (name == "")
         continue;
       result.push(
@@ -31901,21 +31903,89 @@ function renderCalendar(containerEl, eventSources, settings) {
   return cal;
 }
 
-// src/views/CalendarView.ts
-var CalendarView = class extends import_obsidian.ItemView {
-  constructor(leaf, idForCache, eventSrc, calendarSettings, cache, noteManager, placeForCreatingNote) {
+// src/views/BaseSrcView.ts
+var import_obsidian = require("obsidian");
+var BaseSrcView = class extends import_obsidian.ItemView {
+  constructor(leaf, eventSrc) {
     super(leaf);
-    this.calendar = null;
     this.selectedSrcPaths = /* @__PURE__ */ new Set();
-    this.cache = cache;
-    this.idForCache = idForCache;
-    this.eventSrc = eventSrc;
-    this.noteManager = noteManager;
-    this.calendarSettings = calendarSettings;
-    this.placeForCreatingNote = placeForCreatingNote;
+    this._eventSrc = eventSrc;
     for (let src of eventSrc) {
       this.selectedSrcPaths.add(src.path);
     }
+  }
+  renderSrcCheckboxes(srcCheckboxContainer) {
+    srcCheckboxContainer.empty();
+    srcCheckboxContainer.addClass("src-checkboxes");
+    const selectAllButton = srcCheckboxContainer.createEl("button", { text: "Select All" });
+    selectAllButton.addEventListener("click", async () => {
+      for (let src of this._eventSrc) {
+        this.selectedSrcPaths.add(src.path);
+      }
+      this.renderSrcCheckboxes(srcCheckboxContainer);
+      await this.refreshView();
+    });
+    const selectNoneButton = srcCheckboxContainer.createEl("button", { text: "Clear" });
+    selectNoneButton.addEventListener("click", async () => {
+      this.selectedSrcPaths.clear();
+      this.renderSrcCheckboxes(srcCheckboxContainer);
+      await this.refreshView();
+    });
+    for (let src of this._eventSrc) {
+      const id = `src-checkbox-${this.getViewType()}-${src.path}`;
+      const checkboxContainer = srcCheckboxContainer.createDiv({ cls: "src-checkbox-item" });
+      const checkbox = checkboxContainer.createEl("input", {
+        type: "checkbox",
+        attr: {
+          id,
+          checked: this.selectedSrcPaths.has(src.path) ? "checked" : null
+        }
+      });
+      checkbox.addEventListener("change", async () => {
+        if (checkbox.checked) {
+          this.selectedSrcPaths.add(src.path);
+        } else {
+          this.selectedSrcPaths.delete(src.path);
+        }
+        await this.refreshView();
+      });
+      checkboxContainer.createEl("label", {
+        text: src.path,
+        attr: { for: id }
+      });
+    }
+  }
+  isPathInActiveSrc(pagePath) {
+    const eventSrc = this._eventSrc.filter(
+      (src2) => src2.isIn(pagePath)
+    );
+    if (eventSrc.length == 0)
+      return false;
+    const src = eventSrc.reduce(
+      (prevSrc, curSrc) => {
+        if (prevSrc.getFolderDepth() < curSrc.getFolderDepth())
+          return curSrc;
+        return prevSrc;
+      },
+      eventSrc[0]
+    );
+    return this.selectedSrcPaths.has(src.path);
+  }
+  get eventSrc() {
+    return this._eventSrc;
+  }
+};
+
+// src/views/CalendarView.ts
+var CalendarView = class extends BaseSrcView {
+  constructor(leaf, idForCache, eventSrc, calendarSettings, cache, noteManager, placeForCreatingNote) {
+    super(leaf, eventSrc);
+    this.calendar = null;
+    this.cache = cache;
+    this.idForCache = idForCache;
+    this.noteManager = noteManager;
+    this.calendarSettings = calendarSettings;
+    this.placeForCreatingNote = placeForCreatingNote;
   }
   getViewType() {
     return CALENDAR_VIEW_TYPE;
@@ -31924,15 +31994,13 @@ var CalendarView = class extends import_obsidian.ItemView {
     return CALENDAR_TAB_NAME;
   }
   async onOpen() {
-    if (import_obsidian.Platform.isMobile)
+    if (import_obsidian2.Platform.isMobile)
       this.containerEl.style.height = "95vh";
     const { containerEl } = this;
     const container = containerEl.children[1];
     container.empty();
     const checkBoxContainer = container.createDiv();
-    const calendarContainer = container.createDiv(
-      /*{cls: 'class'}*/
-    );
+    const calendarContainer = container.createDiv();
     this.render(calendarContainer);
     this.renderSrcCheckboxes(checkBoxContainer);
   }
@@ -31989,50 +32057,7 @@ var CalendarView = class extends import_obsidian.ItemView {
     this.calendar = null;
     this.cache.unsubscribe(this.idForCache);
   }
-  renderSrcCheckboxes(srcCheckboxContainer) {
-    srcCheckboxContainer.empty();
-    srcCheckboxContainer.addClass("src-checkboxes");
-    for (let src of this.eventSrc) {
-      const checkboxContainer = srcCheckboxContainer.createDiv({ cls: "src-checkbox-item" });
-      const checkbox = checkboxContainer.createEl("input", {
-        type: "checkbox",
-        attr: {
-          id: `src-checkbox-${src.path}`,
-          checked: this.selectedSrcPaths.has(src.path) ? "checked" : null
-        }
-      });
-      checkbox.addEventListener("change", () => {
-        if (checkbox.checked) {
-          this.selectedSrcPaths.add(src.path);
-        } else {
-          this.selectedSrcPaths.delete(src.path);
-        }
-        this.refreshCalendar();
-      });
-      checkboxContainer.createEl("label", {
-        text: src.path,
-        attr: { for: `src-checkbox-${src.path}` }
-      });
-    }
-  }
-  // TODO в рефактор (можно с помощью ООП)
-  isPathInActiveSrc(pagePath) {
-    const eventSrc = this.eventSrc.filter(
-      (src2) => src2.isIn(pagePath)
-    );
-    if (eventSrc.length == 0)
-      return false;
-    const src = eventSrc.reduce(
-      (prevSrc, curSrc) => {
-        if (prevSrc.getFolderDepth() < curSrc.getFolderDepth())
-          return curSrc;
-        return prevSrc;
-      },
-      eventSrc[0]
-    );
-    return this.selectedSrcPaths.has(src.path);
-  }
-  refreshCalendar() {
+  async refreshView() {
     if (!this.calendar)
       return;
     this.calendar.pauseRendering();
@@ -32059,11 +32084,14 @@ var CalendarView = class extends import_obsidian.ItemView {
       editable: true
     };
     if (page.ff_date) {
+      const event = IDateToCalendarEvent(page);
+      if (!event)
+        throw "unreachable";
       const structure = {
         ...structureTemplate,
         id: page.file.path,
         title: page.file.name,
-        ...IDateToCalendarEvent(page)
+        ...event
       };
       if (page.ff_frequency)
         structure.borderColor = colours.frequency;
@@ -32074,6 +32102,10 @@ var CalendarView = class extends import_obsidian.ItemView {
       result.push(structure);
     }
     for (let tick of page.ticks) {
+      const event = IDateToCalendarEvent(tick);
+      console.log(event);
+      if (!event)
+        continue;
       const structure = {
         ...structureTemplate,
         id: templateIDTick(page.file.path, tick.name),
@@ -32083,7 +32115,7 @@ var CalendarView = class extends import_obsidian.ItemView {
           tickName: tick.name,
           notePath: page.file.path
         },
-        ...IDateToCalendarEvent(tick)
+        ...event
       };
       result.push(structure);
     }
@@ -32114,7 +32146,7 @@ var CalendarView = class extends import_obsidian.ItemView {
     window.setTimeout(
       (_3) => {
         var _a, _b;
-        if (import_obsidian.Platform.isMobile)
+        if (import_obsidian2.Platform.isMobile)
           (_a = this.calendar) == null ? void 0 : _a.changeView("timeGrid3Days");
         else
           (_b = this.calendar) == null ? void 0 : _b.changeView("timeGridWeek");
@@ -32183,7 +32215,8 @@ var CalendarView = class extends import_obsidian.ItemView {
           this.noteManager.changePropertyFile(
             newPos.id,
             (property) => {
-              property["ff_date"] = newProp["ff_date"].toISOString().slice(0, -14);
+              var _a2;
+              property["ff_date"] = (_a2 = newProp["ff_date"]) == null ? void 0 : _a2.toISOString().slice(0, -14);
               property["ff_timeStart"] = newProp["ff_timeStart"];
               property["ff_duration"] = newProp["ff_duration"];
             }
@@ -32204,8 +32237,9 @@ var CalendarView = class extends import_obsidian.ItemView {
                 () => this.noteManager.changePropertyFile(
                   pathOfFile,
                   (property) => {
+                    var _a;
                     const newProp = CalendarEventToIDate({ start, end, allDay });
-                    property["ff_date"] = newProp["ff_date"].toISOString().slice(0, -14);
+                    property["ff_date"] = (_a = newProp["ff_date"]) == null ? void 0 : _a.toISOString().slice(0, -14);
                     property["ff_timeStart"] = newProp["ff_timeStart"];
                     property["ff_duration"] = newProp["ff_duration"];
                   }
@@ -32214,7 +32248,7 @@ var CalendarView = class extends import_obsidian.ItemView {
               );
             } catch (e3) {
               console.error(e3);
-              new import_obsidian.Notice("Hm... error...");
+              new import_obsidian2.Notice("Hm... error...");
             }
           }
         ).open();
@@ -32224,7 +32258,7 @@ var CalendarView = class extends import_obsidian.ItemView {
       },
       slotDuration: this.calendarSettings.slotDuration
     };
-    if (import_obsidian.Platform.isMobile) {
+    if (import_obsidian2.Platform.isMobile) {
       result.eventClick = (arg) => {
         const { event, jsEvent } = arg;
         this.contextMenuForEvent(event, jsEvent);
@@ -32235,7 +32269,7 @@ var CalendarView = class extends import_obsidian.ItemView {
     return result;
   }
   contextMenuForEvent(event, mouseEvent) {
-    const menu = new import_obsidian.Menu();
+    const menu = new import_obsidian2.Menu();
     menu.addItem(
       (item) => item.setTitle(event.id).onClick(
         () => this.noteManager.openNote(getPathFromEvent(event))
@@ -32244,7 +32278,7 @@ var CalendarView = class extends import_obsidian.ItemView {
     menu.showAtMouseEvent(mouseEvent);
   }
 };
-var NameModal = class extends import_obsidian.Modal {
+var NameModal = class extends import_obsidian2.Modal {
   constructor(app, onSubmit) {
     super(app);
     this.onSubmit = onSubmit;
@@ -32252,10 +32286,10 @@ var NameModal = class extends import_obsidian.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h1", { text: "Name of task" });
-    new import_obsidian.Setting(contentEl).setName("Name").addText(
+    new import_obsidian2.Setting(contentEl).setName("Name").addText(
       (text) => text.onChange((value) => this.result = value)
     );
-    new import_obsidian.Setting(contentEl).addButton(
+    new import_obsidian2.Setting(contentEl).addButton(
       (btn) => btn.setButtonText("Submit").setCta().onClick(() => {
         this.close();
         this.onSubmit(this.result);
@@ -32272,7 +32306,7 @@ function getPathFromEvent(event) {
 }
 
 // src/cache.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 var Cache2 = class {
   constructor(noteManager, vault) {
     this.storage = /* @__PURE__ */ new Map();
@@ -32390,12 +32424,12 @@ var Cache2 = class {
   }
   async initStorage() {
     const tFiles = this.vault.getMarkdownFiles();
-    const notice = new import_obsidian2.Notice(
+    const notice = new import_obsidian3.Notice(
       `${MSG_PLG_NAME}: there are ${tFiles.length} notes`,
       1e3 * 60
       // 60 seconds
     );
-    const n2 = new import_obsidian2.Notice("", 1e3 * 60);
+    const n2 = new import_obsidian3.Notice("", 1e3 * 60);
     for (let [i3, tFile] of tFiles.entries()) {
       n2.setMessage(
         `${MSG_PLG_NAME}: (${i3}/${tFiles.length}) added ${tFile.path}`
@@ -32407,7 +32441,7 @@ var Cache2 = class {
     }
     n2.hide();
     notice.hide();
-    new import_obsidian2.Notice(`${MSG_PLG_NAME}: cache has been inited`);
+    new import_obsidian3.Notice(`${MSG_PLG_NAME}: cache has been inited`);
   }
 };
 
@@ -32467,8 +32501,8 @@ var Src = class {
 };
 
 // src/setting.ts
-var import_obsidian3 = require("obsidian");
-var MySettingTab = class extends import_obsidian3.PluginSettingTab {
+var import_obsidian4 = require("obsidian");
+var MySettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin, vaultOps) {
     super(app, plugin);
     this.plugin = plugin;
@@ -32478,23 +32512,23 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
     let { containerEl } = this;
     containerEl.empty();
     const settings = this.plugin.getSettings();
-    new import_obsidian3.Setting(containerEl).setHeading().setName("It's recommended to reload ObsidianApp after changing the settings");
-    new import_obsidian3.Setting(containerEl).addButton(
+    new import_obsidian4.Setting(containerEl).setHeading().setName("It's recommended to reload ObsidianApp after changing the settings");
+    new import_obsidian4.Setting(containerEl).addButton(
       (btn) => {
         btn.setButtonText("Set Default Values").onClick(
           () => {
             this.plugin.saveSettings(DEFAULT_SETTINGS);
-            new import_obsidian3.Notice(MSG_PLG_NAME + "The default settings has been applied");
+            new import_obsidian4.Notice(MSG_PLG_NAME + "The default settings has been applied");
           }
         );
       }
     );
-    new import_obsidian3.Setting(containerEl).setHeading();
-    new import_obsidian3.Setting(containerEl).setName("Event Sources").setHeading().setDesc("Folders to search for event notes");
+    new import_obsidian4.Setting(containerEl).setHeading();
+    new import_obsidian4.Setting(containerEl).setName("Event Sources").setHeading().setDesc("Folders to search for event notes");
     for (let index_ in settings.source.noteSources) {
       const index8 = Number(index_);
       const src = settings.source.noteSources[index8];
-      new import_obsidian3.Setting(containerEl).setName(`Source folder ${index8 + 1}`).addText(async (text) => {
+      new import_obsidian4.Setting(containerEl).setName(`Source folder ${index8 + 1}`).addText(async (text) => {
         var _a;
         const src2 = settings.source.noteSources[index8];
         const folders = await this.vaultOps.getFoldersInVault();
@@ -32525,19 +32559,19 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
             this.plugin.saveSettings(settings);
             this.display();
           } else {
-            new import_obsidian3.Notice("Cannot remove the last folder");
+            new import_obsidian4.Notice("Cannot remove the last folder");
           }
         });
       });
     }
-    new import_obsidian3.Setting(containerEl).setName("Add new folder").setDesc("Add another folder to search for events").addButton(
+    new import_obsidian4.Setting(containerEl).setName("Add new folder").setDesc("Add another folder to search for events").addButton(
       (button) => button.setButtonText("Add Folder").setCta().onClick(() => {
         settings.source.noteSources.push(new Src("").toSrcJson());
         this.plugin.saveSettings(settings);
         this.display();
       })
     );
-    new import_obsidian3.Setting(containerEl).setName("Default create path").setDesc("Default path where new notes will be created").addText(async (text) => {
+    new import_obsidian4.Setting(containerEl).setName("Default create path").setDesc("Default path where new notes will be created").addText(async (text) => {
       var _a;
       const folders = await this.vaultOps.getFoldersInVault();
       text.setPlaceholder("Enter folder path").setValue(settings.source.defaultCreatePath || "").onChange(async (value) => {
@@ -32558,9 +32592,9 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
       text.inputEl.setAttribute("list", `default-path-suggestions`);
       (_a = text.inputEl.parentElement) == null ? void 0 : _a.appendChild(dataList);
     });
-    new import_obsidian3.Setting(containerEl).setHeading();
-    new import_obsidian3.Setting(containerEl).setName("Calendar").setHeading();
-    new import_obsidian3.Setting(containerEl).setName("Slot duration").setDesc(`Default: ${DEFAULT_SETTINGS.calendar.slotDuration}`).addText(
+    new import_obsidian4.Setting(containerEl).setHeading();
+    new import_obsidian4.Setting(containerEl).setName("Calendar").setHeading();
+    new import_obsidian4.Setting(containerEl).setName("Slot duration").setDesc(`Default: ${DEFAULT_SETTINGS.calendar.slotDuration}`).addText(
       (component) => {
         component.setPlaceholder("hh:mm:ss").setValue(settings.calendar.slotDuration).onChange(
           (value) => {
@@ -32570,7 +32604,7 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
         );
       }
     );
-    new import_obsidian3.Setting(containerEl).setName("Colours").setHeading();
+    new import_obsidian4.Setting(containerEl).setName("Colours").setHeading();
     for (let key of Object.keys(settings.calendar.colours)) {
       this.addColourSetting(
         containerEl,
@@ -32583,7 +32617,7 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
         }
       );
     }
-    new import_obsidian3.Setting(containerEl).setName("RestTime").setHeading();
+    new import_obsidian4.Setting(containerEl).setName("RestTime").setHeading();
     for (let index8 in settings.calendar.restTime) {
       const el = settings.calendar.restTime[index8];
       let name = "";
@@ -32593,7 +32627,7 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
         name = "Sleep time";
       } else
         continue;
-      new import_obsidian3.Setting(containerEl).setName(`Start of ${name} (${index8})`).addText(
+      new import_obsidian4.Setting(containerEl).setName(`Start of ${name} (${index8})`).addText(
         (text) => {
           text.setValue(el.startTime).setPlaceholder("hh:mm:ss").onChange(
             (val) => {
@@ -32603,7 +32637,7 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
           );
         }
       );
-      new import_obsidian3.Setting(containerEl).setName(`End of ${name} (${index8})`).addText(
+      new import_obsidian4.Setting(containerEl).setName(`End of ${name} (${index8})`).addText(
         (text) => {
           text.setValue(el.endTime).setPlaceholder("hh:mm:ss").onChange(
             (val) => {
@@ -32614,10 +32648,10 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
         }
       );
     }
-    new import_obsidian3.Setting(containerEl).setHeading();
-    new import_obsidian3.Setting(containerEl).setName("StatusCorrector").setHeading();
+    new import_obsidian4.Setting(containerEl).setHeading();
+    new import_obsidian4.Setting(containerEl).setName("StatusCorrector").setHeading();
     const statusCorrector = settings.statusCorrector.isOn;
-    new import_obsidian3.Setting(containerEl).setName("Enable tool").addToggle(
+    new import_obsidian4.Setting(containerEl).setName("Enable tool").addToggle(
       (toggle) => toggle.setValue(statusCorrector).onChange(
         (value) => {
           settings.statusCorrector.isOn = value;
@@ -32627,7 +32661,7 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
       )
     );
     if (statusCorrector) {
-      new import_obsidian3.Setting(containerEl).setName("Start on Start Up").addToggle(
+      new import_obsidian4.Setting(containerEl).setName("Start on Start Up").addToggle(
         (toggle) => toggle.setValue(settings.statusCorrector.startOnStartUp).onChange(
           (val) => {
             settings.statusCorrector.startOnStartUp = val;
@@ -32638,7 +32672,7 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
     }
   }
   addColourSetting(containerEl, name, defaultValue, currentValue, callback) {
-    new import_obsidian3.Setting(containerEl).setName(name).setDesc(`Default: ${defaultValue}`).addText(
+    new import_obsidian4.Setting(containerEl).setName(name).setDesc(`Default: ${defaultValue}`).addText(
       (component) => {
         component.setPlaceholder("#0f0f0f").setValue(currentValue).onChange((val) => callback(val));
       }
@@ -32647,7 +32681,7 @@ var MySettingTab = class extends import_obsidian3.PluginSettingTab {
 };
 
 // src/views/StatusCorrector.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 var StatusCorrector = class {
   constructor(idForCache, eventSrc, cache, noteManager) {
     this.subscribed = false;
@@ -32742,7 +32776,7 @@ var StatusCorrector = class {
     return true;
   }
   async correctAllNotes() {
-    const notice = new import_obsidian4.Notice(
+    const notice = new import_obsidian5.Notice(
       MSG_PLG_NAME + ": Start checking status of notes",
       1e3 * 60
       // 60 seconds
@@ -32794,7 +32828,7 @@ var StatusCorrector = class {
       () => notice.hide(),
       3e3
     );
-    new import_obsidian4.Notice(`${MSG_PLG_NAME}: Notes has been checked`);
+    new import_obsidian5.Notice(`${MSG_PLG_NAME}: Notes has been checked`);
   }
   destroy() {
     this.cache.unsubscribe(this.idForCache);
@@ -32820,7 +32854,7 @@ var StatusCorrector = class {
       const isChanged = await this.correctNote(page2);
       if (!isChanged && page2.ff_status == oldPage.ff_status)
         continue;
-      new import_obsidian4.Notice(
+      new import_obsidian5.Notice(
         `${page2.file.name} - change status: ${oldStatus} => ${page2.ff_status}`
       );
       const child = await getParentNote(page2);
@@ -32838,7 +32872,7 @@ var StatusCorrector = class {
 };
 
 // src/views/TickCheker.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 var TickChecker = class {
   constructor(idForCache, eventSrc, cache, noteManager) {
     this.cache = cache;
@@ -32864,7 +32898,7 @@ var TickChecker = class {
         page.file.path,
         text.replace(regExp, `[t::${tick.name}_$1]`)
       );
-      new import_obsidian5.Notice(`${MSG_PLG_NAME}: change tickname in ${page.file.name}: ${tick.name}`);
+      new import_obsidian6.Notice(`${MSG_PLG_NAME}: change tickname in ${page.file.name}: ${tick.name}`);
     }
   }
   renameFile(newPage, oldPage) {
@@ -32880,7 +32914,7 @@ var TickChecker = class {
 };
 
 // src/NoteManager.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 var NoteManager = class {
   constructor(vault, metadataCache, fileManager, workspace) {
     this.vault = vault;
@@ -32890,7 +32924,7 @@ var NoteManager = class {
   }
   async createFile(path) {
     await this.vault.create(path, "");
-    new import_obsidian6.Notice(MSG_PLG_NAME + "created " + path);
+    new import_obsidian7.Notice(MSG_PLG_NAME + "created " + path);
   }
   async changePropertyFile(path, callback) {
     const tFile = this.metadataCache.getFirstLinkpathDest(path, "");
@@ -32906,10 +32940,11 @@ var NoteManager = class {
     );
   }
   async changeTickFile(path, tickname, event) {
+    var _a;
     const tFile = this.metadataCache.getFirstLinkpathDest(path, "");
     const text = await this.vault.read(tFile);
     const regExp = new RegExp(`\\[t::\\s*${tickname}(,[^\\]]*|)\\]`, "gm");
-    const date = event["ff_date"].toISOString().slice(0, -14);
+    const date = (_a = event["ff_date"]) == null ? void 0 : _a.toISOString().slice(0, -14);
     const newString = `[t::${tickname},${date},${event["ff_timeStart"]},${event["ff_duration"]}]`;
     await this.vault.modify(
       tFile,
@@ -32922,7 +32957,7 @@ var NoteManager = class {
     tFile && leaf.openFile(tFile);
   }
   async getPage(file) {
-    var _a;
+    var _a, _b, _c;
     const result = {
       file: {
         path: file.path,
@@ -32930,10 +32965,7 @@ var NoteManager = class {
       },
       ticks: getTicksFromText(await this.vault.cachedRead(file)),
       ff_duration: "",
-      ff_timeStart: "",
-      // TODO из-за того, что не все заметки имеют ff_date, он должен возвращать null, но это bad practice
-      //@ts-ignore
-      ff_date: null
+      ff_timeStart: ""
     };
     const property = (_a = this.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
     if (!property) {
@@ -32942,11 +32974,9 @@ var NoteManager = class {
     const added = {
       ff_duration: dv.duration(property.ff_duration),
       ff_timeStart: dv.duration(property.ff_timeStart),
-      ff_date: dv.date(property.ff_date),
-      ff_deadline: void 0
+      ff_date: (_b = dv.date(property.ff_date)) == null ? void 0 : _b.toJSDate(),
+      ff_deadline: (_c = dv.date(property.ff_deadline)) == null ? void 0 : _c.toJSDate()
     };
-    if (property.ff_deadline)
-      added.ff_deadline = new Date(property.ff_deadline);
     return {
       ...result,
       ...property,
@@ -32986,14 +33016,14 @@ var NoteManager = class {
 };
 
 // src/vaultOps.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 var VaultOps = class {
   constructor(vault) {
     this.vault = vault;
   }
   async getTFile(path) {
     const file = this.vault.getAbstractFileByPath(path);
-    if (file && file instanceof import_obsidian7.TFile) {
+    if (file && file instanceof import_obsidian8.TFile) {
       return file;
     } else {
       return null;
@@ -33051,11 +33081,11 @@ var VaultOps = class {
     const folders = [];
     const files = [];
     for (let file of all) {
-      if (file instanceof import_obsidian7.TFolder) {
+      if (file instanceof import_obsidian8.TFolder) {
         let path = file.path.startsWith("/") ? file.path.slice(1) : file.path;
         path = path == "" ? "" : `${path}/`;
         folders.push(path);
-      } else if (file instanceof import_obsidian7.TFile) {
+      } else if (file instanceof import_obsidian8.TFile) {
         const path = file.path.startsWith("/") ? file.path.slice(1) : file.path;
         files.push(path);
       }
@@ -33075,9 +33105,6 @@ var VaultOps = class {
     return files;
   }
 };
-
-// src/views/GanttView.ts
-var import_obsidian8 = require("obsidian");
 
 // lib/frappe-gantt/src/date_utils.js
 var YEAR = "year";
@@ -35665,23 +35692,18 @@ var enumToCustomClass = {
   FULL: "full",
   ONLY_DEADLINE: "only-deadline",
   // TODO gradient document
-  ONLY_DO_DAYS: "only-do-days",
+  ONLY_START: "only-do-days",
   // TODO orange document
   NOTHING: "nothing"
   // TODO red document
 };
-var _GanttView = class extends import_obsidian8.ItemView {
+var _GanttView = class extends BaseSrcView {
   constructor(leaf, idForCache, eventSrc, ganttSettings, cache, noteManager) {
-    super(leaf);
-    this.selectedSrcPaths = /* @__PURE__ */ new Set();
+    super(leaf, eventSrc);
     this.cache = cache;
     this.idForCache = idForCache;
-    this.eventSrc = eventSrc;
     this.noteManager = noteManager;
     this.localStorage = new Graph(cache, noteManager);
-    for (let src of eventSrc) {
-      this.selectedSrcPaths.add(src.path);
-    }
   }
   getViewType() {
     return GANTT_VIEW_TYPE;
@@ -35697,14 +35719,18 @@ var _GanttView = class extends import_obsidian8.ItemView {
     const htmlContainer = container.createDiv(
       /*{cls: 'class'}*/
     );
+    const legendContainter = container.createDiv(
+      /*{cls: 'class'}*/
+    );
     this.render(htmlContainer);
+    this.renderLegend(legendContainter);
     this.renderSrcCheckboxes(checkBoxContainer);
   }
   addFile(page) {
     this.localStorage.addPage(page);
     if (!this.isPathInActiveSrc(page.file.path))
       return;
-    this.refresh();
+    this.refreshView();
   }
   async changeFile(newPage, oldPage) {
     this.localStorage.addPage(newPage);
@@ -35733,7 +35759,7 @@ var _GanttView = class extends import_obsidian8.ItemView {
     this.localStorage.deletePage(page);
     if (!this.isPathInActiveSrc(page.file.path))
       return;
-    await this.refresh();
+    await this.refreshView();
   }
   reset() {
     this.onunload();
@@ -35741,56 +35767,11 @@ var _GanttView = class extends import_obsidian8.ItemView {
   }
   onunload() {
   }
-  async refresh() {
+  async refreshView() {
     const events = (await this.localStorage.getEvents()).filter(
       (event) => this.isPathInActiveSrc(event.extra.path)
     );
     this.gantt.refresh(events);
-  }
-  // TODO что будет, если ResetStorage
-  // TODO это повторяется в CalendarView надо черех ооп делать
-  renderSrcCheckboxes(srcCheckboxContainer) {
-    srcCheckboxContainer.empty();
-    srcCheckboxContainer.addClass("src-checkboxes");
-    for (let src of this.eventSrc) {
-      const checkboxContainer = srcCheckboxContainer.createDiv({ cls: "src-checkbox-item" });
-      const checkbox = checkboxContainer.createEl("input", {
-        type: "checkbox",
-        attr: {
-          id: `src-checkbox-${src.path}`,
-          checked: this.selectedSrcPaths.has(src.path) ? "checked" : null
-        }
-      });
-      checkbox.addEventListener("change", async () => {
-        if (checkbox.checked) {
-          this.selectedSrcPaths.add(src.path);
-        } else {
-          this.selectedSrcPaths.delete(src.path);
-        }
-        await this.refresh();
-      });
-      checkboxContainer.createEl("label", {
-        text: src.path,
-        attr: { for: `src-checkbox-${src.path}` }
-      });
-    }
-  }
-  // TODO в рефактор (можно с помощью ООП)
-  isPathInActiveSrc(pagePath) {
-    const eventSrc = this.eventSrc.filter(
-      (src2) => src2.isIn(pagePath)
-    );
-    if (eventSrc.length == 0)
-      return false;
-    const src = eventSrc.reduce(
-      (prevSrc, curSrc) => {
-        if (prevSrc.getFolderDepth() < curSrc.getFolderDepth())
-          return curSrc;
-        return prevSrc;
-      },
-      eventSrc[0]
-    );
-    return this.selectedSrcPaths.has(src.path);
   }
   async render(container) {
     container.id = _GanttView.CONTAINER_ID;
@@ -35825,15 +35806,27 @@ var _GanttView = class extends import_obsidian8.ItemView {
         await this.noteManager.changePropertyFile(
           task.extra.path,
           (property) => {
+            property["ff_date"] = start.toISOString().slice(0, -14);
             property["ff_deadline"] = end.toISOString().slice(0, -14);
-            property["ff_doDays"] = Math.floor(
-              (end.getTime() - start.getTime()) / MillisecsInDay
-            );
           }
         );
       }
       // on_click: (event: IEvent) => {console.log(event); this.noteManager.openNote(event.extra.path);}
     };
+  }
+  renderLegend(container) {
+    const legend = container.createDiv({ cls: "gantt-legend" });
+    const legendItems = [
+      { className: "full", label: "Full data (start and end)" },
+      { className: "only-deadline", label: "Only end (deadline)" },
+      { className: "only-do-days", label: "Only start" },
+      { className: "nothing", label: "No data" }
+    ];
+    for (let item of legendItems) {
+      const itemEl = legend.createDiv({ cls: "gantt-legend-item" });
+      itemEl.createDiv({ cls: `gantt-legend-color ${item.className}` });
+      itemEl.createSpan({ text: item.label });
+    }
   }
 };
 var GanttView = _GanttView;
@@ -35846,10 +35839,16 @@ var Graph = class {
   }
   async getEvents() {
     const roots = this.getRoots();
+    const resSet = /* @__PURE__ */ new Set();
     const res = [];
     for (let node of roots) {
       const events = await this.calcEvents([node]);
-      res.push(...events);
+      for (let event of events) {
+        if (resSet.has(event.id))
+          continue;
+        res.push(event);
+        resSet.add(event.id);
+      }
     }
     res.sort(
       (a3, b3) => a3.end.getTime() - b3.end.getTime()
@@ -35898,24 +35897,26 @@ var Graph = class {
   async calcEvents(history) {
     const { event, from, to } = history[0];
     if (!event.name) {
-      console.error("unreachable");
-      event.name = "null";
+      throw Error("unreachable");
     }
     const children = await Promise.all(
-      Array.from(to).map(
-        (path) => this.hashTable.get(path)
-      ).map((node) => node).map(
+      Array.from(to).map((path) => this.hashTable.get(path)).map((node) => node).map(
         async (node) => await this.calcEvents([node, ...history])
       ).filter(Boolean)
     );
     let start, end, colour, toSkip = false;
-    if (event.end && event.doDays) {
-      colour = enumToCustomClass.FULL;
+    if (event.end && event.start) {
       end = event.end;
-      start = new Date(end);
-      start.setTime(
-        end.getTime() - event.doDays * MillisecsInDay
-      );
+      if (event.start < event.end) {
+        colour = enumToCustomClass.FULL;
+        start = event.start;
+      } else {
+        colour = enumToCustomClass.ONLY_DEADLINE;
+        start = new Date(end);
+        start.setTime(
+          end.getTime() - MillisecsInDay
+        );
+      }
     } else if (event.end) {
       colour = enumToCustomClass.ONLY_DEADLINE;
       end = event.end;
@@ -35923,15 +35924,12 @@ var Graph = class {
       start.setTime(
         start.getTime() - DEFAULT_OFFSET_DAY * MillisecsInDay
       );
-    } else if (event.doDays) {
-      colour = enumToCustomClass.ONLY_DO_DAYS;
-      const [end_, isOk] = await getMinDateFromChild(children, [...history], this.cache, this.noteManager);
-      if (!isOk)
-        toSkip = true;
-      end = end_;
-      start = new Date(end);
-      start.setTime(
-        end.getTime() - event.doDays * MillisecsInDay
+    } else if (event.start) {
+      colour = enumToCustomClass.ONLY_START;
+      start = event.start;
+      end = new Date(start);
+      end.setTime(
+        end.getTime() + DEFAULT_OFFSET_DAY * MillisecsInDay
       );
     } else {
       colour = enumToCustomClass.NOTHING;
@@ -35983,13 +35981,13 @@ function convertToGraphEvent(page) {
   return {
     id: page.file.path,
     name: page.file.name,
-    doDays: page.ff_doDays,
+    start: page.ff_date,
     end: page.ff_deadline
   };
 }
 async function calculateNextStartDate(history, cache, noteManager) {
   const curNode = history.shift();
-  let offsetDays = (curNode == null ? void 0 : curNode.event.doDays) || DEFAULT_OFFSET_DAY;
+  let offsetDays = DEFAULT_OFFSET_DAY;
   let startChainDate = new Date();
   startChainDate.setHours(0, 0, 0, 0);
   for (let [i3, parent] of history.entries()) {
@@ -36003,7 +36001,11 @@ async function calculateNextStartDate(history, cache, noteManager) {
       startChainDate = new Date(parent.event.end);
       break;
     }
-    offsetDays += parent.event.doDays || DEFAULT_OFFSET_DAY;
+    offsetDays += DEFAULT_OFFSET_DAY;
+    if (parent.event.start) {
+      startChainDate = new Date(parent.event.start);
+      break;
+    }
   }
   startChainDate.setTime(
     startChainDate.getTime() + offsetDays * MillisecsInDay

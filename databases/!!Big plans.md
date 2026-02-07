@@ -1,4 +1,9 @@
-[[databases/!_fff]]
 ---
+ff_l_parent:
+  - "[[databases/!_fff|!_fff]]"
+---
+
+---
+
 
 `$= dv.view('script/bigPlans');`

@@ -28,7 +28,7 @@ WHERE t
 ---
 # All
 
-```dataview
+```datavie
 TABLE ff_status, ff_date, frequency, ff_l_parent,
 	file.inlinks AS Дети
 FROM "databases"

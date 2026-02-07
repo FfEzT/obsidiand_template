@@ -35,7 +35,6 @@
     "ff_targetCapacity": "number",
     "ff_l_observer": "multitext",
     "ff_l_related": "multitext",
-    "ff_cost": "number",
-    "ff_doDays": "number"
+    "ff_cost": "number"
   }
 }

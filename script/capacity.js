@@ -63,7 +63,6 @@ function checkCond(obj) {
     obj.ff_date >= startDay
 }
 
-const rootHours = {}
 
 function getRoots(page) {
     const pages = new Set()
@@ -121,46 +120,87 @@ function addToMapNumber(map, key, num) {
 
 }
 
-const dayHours = {}
-// console.log(dv.date("today").toISODate())
+const dayHoursConf= {}
+let resultConf = 0
+const rootHoursConf = {}
 
+const dayHours = {}
+const rootHours = {}
 let result = 0
+
 for (let page of pages) {
+    let ff_confidence = page.ff_confidence
+    if (page.ff_confidence != 0 && !page.ff_confidence) {
+        ff_confidence = 4
+    }
+    ff_confidence *= 0.25
+
     if (checkCond(page) && page.ff_duration) {
+
         const hours = page.ff_duration.as("hour")
 
+        let hoursConf = 0
+        if (ff_confidence != 0) {
+            hoursConf = hours / ff_confidence
+            hoursConf = Math.floor(hoursConf * 100) / 100
+        }
+
+
         result += hours
+        resultConf += hoursConf
 
         addStatistic(rootHours, page, hours)
+        addStatistic(rootHoursConf, page, hoursConf)
 
         addToMapNumber(
             dayHours,
             dv.date(page.ff_date).toISODate(),
             hours
         )
+
+        addToMapNumber(
+            dayHoursConf,
+            dv.date(page.ff_date).toISODate(),
+            hoursConf
+        )
     }
     if (page.t) {
         const tmp = convertDvToTarr(page.t)
-        .filter(a => checkCond(a))
+            .filter(a => checkCond(a))
 
         for (let i of tmp) {
             if (!i.ff_duration) {
                 continue
             }
             const hours = i.ff_duration.as("hour")
+            let hoursConf = 0
+            if (ff_confidence != 0) {
+                hoursConf = hours / ff_confidence
+                hoursConf = Math.round(hoursConf * 100) / 100
+            }
 
             result += hours
+            resultConf += hoursConf
+
             addStatistic(rootHours, page, hours)
+            addStatistic(rootHoursConf, page, hoursConf)
 
             addToMapNumber(
                 dayHours,
                 dv.date(i.ff_date).toISODate(),
                 hours
             )
+
+            addToMapNumber(
+                dayHoursConf,
+                dv.date(i.ff_date).toISODate(),
+                hoursConf
+            )
         }
     }
 }
 result -= currentDv.ff_offset
+resultConf -= currentDv.ff_offset
 
 const getProgress = (countDone, countAll) => {
     const fraction = countDone/countAll
@@ -170,58 +210,105 @@ const getProgress = (countDone, countAll) => {
     return progress
 }
 
-const containerEl = createDiv();
-Object.assign(containerEl.style, {
-    'display': 'flex',
-    'flex-direction': 'column',
-    'align-items': 'center',
-    'justify-content': 'center',
-    'width':'100%'
+function makeProgressBlock({ title, value, max, percentValue = value }) {
+  const container = createDiv();
+  Object.assign(container.style, {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  });
+
+  const bar = container.createEl("progress");
+  Object.assign(bar, { max, value });
+  Object.assign(bar.style, { width: "100%", height: "10px" });
+
+  container.createEl("div", {
+    text: `${getProgress(percentValue, max)}% ${Math.round(value*100)/100}/${max}`,
+  });
+
+  // заголовок + блок
+  dv.header(4, title);
+  dv.paragraph(container);
+
+  return container;
+}
+
+// использование
+makeProgressBlock({
+  title: "Fact",
+  value: result,
+  max: currentDv.ff_targetCapacity,
 });
 
-const progressBar = containerEl.createEl('progress');
-Object.assign(progressBar, {max: currentDv.ff_targetCapacity, value: result});
-Object.assign(progressBar.style, {"width":"100%", "height":"10px"});
-
-const progressText = containerEl.createEl('div');
-Object.assign(progressText, {
-    'textContent': `${getProgress(result, currentDv.ff_targetCapacity)}% ${result}/${currentDv.ff_targetCapacity}`,
+makeProgressBlock({
+  title: "Conf",
+  value: resultConf,
+  max: currentDv.ff_targetCapacity,
 });
 
-dv.paragraph(containerEl)
 
 // RENDER dayToHours
-const dayToHours = []
-let summ = 0
-for (let key in dayHours) {
-    let hour = dayHours[key]
-    summ += hour
+function renderDayHoursTable({
+  title,
+  dayHoursObj,
+  dateHeader = "ff_date",
+  hoursHeader = "hours",
+  totalLabel = "all",
+}) {
+  const rows = [];
+  let sum = 0;
 
-    dayToHours.push(
-        [key, hour]
-    )
+  for (const [date, hours] of Object.entries(dayHoursObj ?? {})) {
+    sum += hours ?? 0;
+    sum = Math.round(sum * 100) / 100;
+    hours_ = Math.round(hours * 100) / 100;
+    rows.push([date, hours_ ?? 0]);
+  }
+
+  rows.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  rows.push([totalLabel, sum]);
+
+  if (title) dv.header(4, title);
+  dv.table([dateHeader, hoursHeader], rows);
+
+  return rows;
 }
-dayToHours.sort((a,b) => a[0] < b[0]? -1 : 1)
-dayToHours.push(["all", summ])
-dv.table(
-    ["ff_date", "hours"],
-    dayToHours
-)
+
+// usage
+renderDayHoursTable({ title: "Fact", dayHoursObj: dayHours });
+renderDayHoursTable({ title: "Conf", dayHoursObj: dayHoursConf });
 
 // RENDER noteToHours
-const rootAndHours = []
-summ = 0
-for (let key in rootHours) {
-    let hour = rootHours[key]
-    summ += hour
-    rootAndHours.push(
-        [dv.page(key).file.link, hour]
-    )
-}
-rootAndHours.sort((a,b) => a[1] > b[1]? -1 : 1)
-rootAndHours.push(["all", summ])
+function renderRootHoursTable({
+  title,
+  rootHoursObj,
+  rootHeader = "root",
+  hoursHeader = "hours",
+  totalLabel = "all",
+}) {
+  const rows = [];
+  let sum = 0;
 
-dv.table(
-    ["root", "hours"],
-    rootAndHours
-)
+  for (const [key, hours] of Object.entries(rootHoursObj ?? {})) {
+    let h = hours ?? 0;
+    h = Math.round(h * 100) / 100;
+    sum += h;
+    rows.push([key, h]);
+  }
+
+  // по убыванию часов
+  rows.sort((a, b) => b[1] - a[1]);
+
+  rows.push([totalLabel, sum]);
+
+  if (title) dv.header(4, title);
+  dv.table([rootHeader, hoursHeader], rows);
+
+  return rows;
+}
+
+// usage
+renderRootHoursTable({ title: "Fact", rootHoursObj: rootHours });
+renderRootHoursTable({ title: "Conf", rootHoursObj: rootHoursConf });

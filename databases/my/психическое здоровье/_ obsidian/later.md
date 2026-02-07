@@ -6,7 +6,7 @@ ff_frequency: week
 ff_timeStart:
 ---
 ff_l_parent:: [[!obsidian]]
-progress:: `$= dv.view('script/progressView', {file: dv.current().file.name})`
+progress:: `$= dv.view('script/progressView', {file: dv.current().file.path})`
 
 
 ---

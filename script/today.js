@@ -57,11 +57,22 @@ let pages = dv.pages()
 .array()
 
 const result = []
-
 for (let page of pages) {
     if (checkCond(page)) {
         result.push(
-            [page.file.link, page.ff_status, page.ff_date, page.ff_timeStart, page.ff_frequency]
+            [
+                page.file.link,
+                page.ff_status,
+                page.ff_date,
+
+                // NOTE: если в page.ff_timeStart стоит 0h0m, то в таблице он будет пустой ячейкой
+                // а так будет 0h
+                page.ff_timeStart?.conversionAccuracy && page.ff_timeStart == ""
+                  ? "0h"
+                  : page.ff_timeStart,
+
+                page.ff_frequency
+            ]
         )
     }
     if (page.t) {
@@ -70,7 +81,19 @@ for (let page of pages) {
 
         for (let i of tmp) {
             result.push(
-                ["("+page.file.link+")"+i.name, page.ff_status, i.ff_date, i.ff_timeStart,""]
+                [
+                    "("+page.file.link+")"+i.name,
+                    page.ff_status,
+                    i.ff_date,
+                    //
+                    // NOTE: если в page.ff_timeStart стоит 0h0m, то в таблице он будет пустой ячейкой
+                    // а так будет 0h
+                    i.ff_timeStart?.conversionAccuracy && i.ff_timeStart == ""
+                      ? "0h"
+                      : i.ff_timeStart,
+
+                    ""
+                ]
             )
         }
     }
@@ -78,7 +101,14 @@ for (let page of pages) {
 
 result
 .sort(
-    (a,b) => a[3] < b[3]? -1:1
+    (a,b) => {
+        if (a[3] == "0h")
+            return -1
+        if (b[3] == "0h")
+            return 1
+
+        return a[3] < b[3]? -1:1
+    }
 )
 .sort(
     (a,b) => a[2] < b[2]? -1:1

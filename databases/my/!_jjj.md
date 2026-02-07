@@ -1,8 +1,0 @@
-
----
-
-```dataview
-TABLE
-FROM [[#]]
-```
-

@@ -1,5 +1,8 @@
+---
+ff_l_parent:
+  - "[[!_my]]"
+---
 
-[[databases/my/!_jjj]]
 ---
 
 ###### order by DICE
